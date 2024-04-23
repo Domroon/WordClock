@@ -5,6 +5,7 @@ from machine import RTC
 from neopixel import NeoPixel
 
 from networking import Client
+from logging import Logger
 
 # Static Variables for RTC
 YEAR = 0
@@ -50,6 +51,7 @@ UHR =       [[7, 9], [8, 9], [9, 9]]
 
 ROW_PINS = [21, 19, 18, 5, 17, 16, 4, 0, 2, 15]
 
+logger = Logger()
 
 class Matrix:
     def __init__(self, row_pins):
