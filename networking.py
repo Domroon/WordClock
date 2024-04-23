@@ -53,6 +53,7 @@ class Client:
                 self.log.debug("Stored network:", network['ssid'])
 
     def activate(self):
+        self.log.info('Wlan client activated')
         self.wlan.active(True)
 
     def search_wlan(self):
@@ -70,7 +71,7 @@ class Client:
                     log_str = "Connecting to " + network['ssid'] + "..."
                     self.log.info(log_str)
                     self.wlan.connect(network['ssid'], network['key'])
-                    time.sleep(5)
+                    time.sleep(7)
                 else:
                     log_str = "Already connected to: " + network['ssid']
                     self.log.info(log_str)
