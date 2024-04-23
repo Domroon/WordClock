@@ -11,6 +11,12 @@ from networking import download_json_file, LINK
 import logging
 from logging import Logger
 
+# COLORS
+WHITE = [150, 150, 150]
+RED = [150, 0, 0]
+GREEN = [0, 150, 0]
+BLUE = [0, 0, 150]
+
 # Static Variables for RTC
 YEAR = 0
 MONTH = 1
@@ -58,8 +64,9 @@ ROW_PINS = [21, 19, 18, 5, 17, 16, 4, 0, 2, 15]
 logger = Logger(logging.DEBUG)
 
 class Matrix:
-    def __init__(self, row_pins):
+    def __init__(self, row_pins, word_color):
         self.rows = self._get_rows(row_pins)
+        self.word_color = word_color
 
     def _get_rows(self, row_pins):
         rows = []
@@ -76,13 +83,13 @@ class Matrix:
             row.fill([0, 0, 0])
             row.write()
 
-    def show_word(self, word, color=[150, 150, 150]):
+    def show_word(self, word, color):
         for led in word:
             self._set_led(led[1], led[0], color)
 
-    def show_words(self, word_list, color=[150, 150, 150]):
+    def show_words(self, word_list, color):
         for word in word_list:
-            self.show_word(word, color=color)
+            self.show_word(word, color)
 
     def clear_word(self, word):
         for led in word:
@@ -105,51 +112,51 @@ class Matrix:
 
         if minute < 5 and hour == 1:
             self.clear_word(NUMBERS[1])
-            self.show_word(NUMBERS[0])
+            self.show_word(NUMBERS[0], self.word_color)
         else:
-            self.show_word(NUMBERS[hour])
+            self.show_word(NUMBERS[hour], self.word_color)
 
     def _show_minute(self, minute):
         if minute < 5:
             self.clear_words([FÜNF_2, VOR])
-            self.show_word(UHR)
+            self.show_word(UHR, self.word_color)
         elif minute >= 5 and minute < 10:
             self.clear_word(UHR)
-            self.show_words([FÜNF_2, NACH])
+            self.show_words([FÜNF_2, NACH], self.word_color)
         elif minute >= 10 and minute < 15:
             self.clear_word(FÜNF_2)
-            self.show_words([ZEHN_2, NACH])
+            self.show_words([ZEHN_2, NACH], self.word_color)
         elif minute >= 15 and minute < 20:
             self.clear_word(ZEHN_2)
-            self.show_words([VIERTEL, NACH])
+            self.show_words([VIERTEL, NACH], self.word_color)
         elif minute >= 20 and minute < 25:
             self.clear_word(VIERTEL)
-            self.show_words([ZWANZIG, NACH])
+            self.show_words([ZWANZIG, NACH], self.word_color)
         elif minute >= 25 and minute < 30:
             self.clear_words([ZWANZIG, NACH])
-            self.show_words([FÜNF_2, VOR, HALB])
+            self.show_words([FÜNF_2, VOR, HALB], self.word_color)
         elif minute >= 30 and minute < 35:
             self.clear_words([FÜNF_2, VOR])
-            self.show_word(HALB)
+            self.show_word(HALB, self.word_color)
         elif minute >= 35 and minute < 40:
-            self.show_words([FÜNF_2, NACH, HALB])
+            self.show_words([FÜNF_2, NACH, HALB], self.word_color)
         elif minute >= 40 and minute < 45:
             self.clear_words([FÜNF_2, NACH, HALB])
-            self.show_words([ZWANZIG, VOR])
+            self.show_words([ZWANZIG, VOR], self.word_color)
         elif minute >= 45 and minute < 50:
             self.clear_words([ZWANZIG, HALB])
-            self.show_words([VIERTEL, VOR])
+            self.show_words([VIERTEL, VOR], self.word_color)
         elif minute >= 50 and minute < 55:
             self.clear_word(VIERTEL)
-            self.show_words([ZEHN_2, VOR])
+            self.show_words([ZEHN_2, VOR], self.word_color)
         elif minute >= 55 and minute != 0:
             self.clear_word(ZEHN_2)
-            self.show_words([FÜNF_2, VOR])
+            self.show_words([FÜNF_2, VOR], self.word_color)
         
     def show_time(self, hour, minute):
         if minute >= 25:
             hour = hour + 1
-        self.show_words([ES, IST])
+        self.show_words([ES, IST], self.word_color)
         self._show_hour(hour, minute)
         self._show_minute(minute)
 
@@ -207,14 +214,19 @@ class Animation:
         for i in range(12):
             self.words.append(NUMBERS[i])
 
-    def random_words(self, duration, on_dura=0.2):
+    def random_words(self, duration, on_dura=0.2, random_color=False):
         duration = duration / on_dura
         loops = 0
+        color = WHITE
+        colors = [WHITE, RED, GREEN, BLUE]
         while True:
             if loops == duration:
                 break
+            if random_color:
+                rand_num = randint(0, len(colors)-1)
+                color = colors[rand_num]
             rand_num = randint(0, len(self.words)-1)
-            self.matrix.show_word(self.words[rand_num])
+            self.matrix.show_word(self.words[rand_num], color)
             time.sleep(on_dura)
             self.matrix.clear_word(self.words[rand_num])
             loops = loops + 1
@@ -241,11 +253,11 @@ def set_rtc(rtc, timeinfo_json):
 
 
 def main():
-    matrix = Matrix(ROW_PINS)
+    matrix = Matrix(ROW_PINS, [150, 150, 150])
     rtc = RTC()
     ani = Animation(matrix)
     matrix.clear()
-    ani.random_words(2)
+    ani.random_words(2, random_color=True)
 
     client = Client(logger)
     client.activate()
