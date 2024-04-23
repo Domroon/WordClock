@@ -1,6 +1,16 @@
 import time
 from machine import Pin
+from machine import Timer
+from machine import RTC
 from neopixel import NeoPixel
+
+# Static Variables for RTC
+YEAR = 0
+MONTH = 1
+DAY = 2
+HOUR = 4
+MINUTE = 5
+SECOND = 6
 
 # Always on
 ES =        [[0, 0], [1,0]]
@@ -133,41 +143,62 @@ class Matrix:
         self._show_minute(minute)
 
 
+
+# (year, month, day[, hour[, minute[, second[, microsecond[, tzinfo]]]]])
 # add the the same functionality like the machine.RTC class
 class RTCmock:
-    def __init__(self):
-        pass
+    def __init__(self, year, month, day, weekday, hour, minute, second, microsecond):
+        self.year = year
+        self.month = month
+        self.day = day
+        self.hour = hour
+        self.day = day
+        self.weekday = weekday
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+        self.microsecond = microsecond
+        self.timer = Timer(0)
+        self.speed = 1
+
+    def start(self):
+        self.timer.init(period=int(self.speed*1000), callback=self._tick)
+
+    def change_speed(self, multiplier):
+        self.speed = 1 / multiplier
+
+    def _tick(self, timer_obj):
+        self.second = self.second + 1
+        if self.second > 59:
+            self.minute = self.minute + 1
+            self.second = 0
+        if self.minute > 59:
+            self.hour = self.hour + 1
+            self.minute = 0
+        if self.hour > 23:
+            self.hour = 0
+        # print(self.hour, ":", self.minute, ":", self.second)
+
+    def datetime(self):
+        return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
 
 
 def main():
     matrix = Matrix(ROW_PINS)
     matrix.clear()
-    matrix.show_time(1, 0)
-    time.sleep(5)
-    matrix.show_time(1, 5)
-    time.sleep(5)
-    matrix.show_time(1, 10)
-    time.sleep(5)
-    matrix.show_time(1, 15)
-    time.sleep(5)
-    matrix.show_time(1, 20)
-    time.sleep(5)
-    matrix.show_time(1, 25)
-    time.sleep(5)
-    matrix.show_time(1, 30)
-    time.sleep(5)
-    matrix.show_time(1, 35)
-    time.sleep(5)
-    matrix.show_time(1, 40)
-    time.sleep(5)
-    matrix.show_time(1, 45)
-    time.sleep(5)
-    matrix.show_time(1, 51)
-    time.sleep(5)
-    matrix.show_time(1, 55)
-    time.sleep(5)
-    matrix.show_time(2, 0)
-    time.sleep(5)
+
+    rtc = RTCmock(2024, 4, 23, 0, 12, 42, 0, 0)
+    rtc.change_speed(100)
+    rtc.start()
+
+    # real_rtc = RTC()
+    # real_rtc.datetime((2024, 4, 23, 0, 12, 42, 0, 0))
+
+    while(True):
+        current_datetime = rtc.datetime()
+        print(current_datetime[HOUR], ":", current_datetime[MINUTE])
+        matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
+        time.sleep(1)
 
 
 if __name__ == '__main__':
