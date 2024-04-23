@@ -5,6 +5,7 @@ from machine import RTC
 from neopixel import NeoPixel
 
 from networking import Client
+from networking import download_json_file, LINK
 from logging import Logger
 
 # Static Variables for RTC
@@ -188,20 +189,46 @@ class RTCmock:
         return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
 
 
+def set_rtc(rtc, timeinfo_json):
+    logger.info("Set RTC:")
+    timeinfo = {}
+    timeinfo['year'] = timeinfo_json['year']
+    timeinfo['month'] = timeinfo_json['month']
+    timeinfo['day'] = timeinfo_json['day']
+    timeinfo['hour'] = timeinfo_json['hour']
+    timeinfo['minute'] = timeinfo_json['minute']
+    timeinfo['second'] = timeinfo_json['seconds']
+    rtc.datetime((timeinfo['year'], 
+                  timeinfo['month'], 
+                  timeinfo['day'], 
+                  0, 
+                  timeinfo['hour'], timeinfo['minute'], timeinfo['second'], 
+                  0))
+    logger.info(timeinfo)
+    logger.info("RTC Output: ")
+    logger.info(rtc.datetime())
+
+
 def main():
     matrix = Matrix(ROW_PINS)
+    rtc = RTC()
+
+    client = Client(logger)
+    client.activate()
+    client.search_wlan()
+    client.connect()
+
+    timeinfo_json = download_json_file(LINK['datetime'])
+    set_rtc(rtc, timeinfo_json)
+
     matrix.clear()
 
-    rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
-    rtc.change_speed(200)
-    rtc.start()
-
-    # real_rtc = RTC()
-    # real_rtc.datetime((2024, 4, 23, 0, 12, 42, 0, 0))
+    # rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
+    # rtc.change_speed(200)
+    # rtc.start()
 
     while(True):
         current_datetime = rtc.datetime()
-        print(current_datetime[HOUR], ":", current_datetime[MINUTE])
         matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
         time.sleep(1)
 
