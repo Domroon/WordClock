@@ -4,6 +4,8 @@ from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
 
+from networking import Client
+
 # Static Variables for RTC
 YEAR = 0
 MONTH = 1
@@ -189,7 +191,7 @@ def main():
     matrix.clear()
 
     rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
-    rtc.change_speed(100)
+    rtc.change_speed(200)
     rtc.start()
 
     # real_rtc = RTC()
