@@ -29,7 +29,7 @@ VOR =       [[6, 3], [7, 3], [8, 3]]
 HALB =      [[0, 4], [1, 4], [2, 4], [3, 4]]
 
 # Numbers
-NUMBERS =     {12: [[5, 4], [6, 4], [7, 4], [8, 4]],
+NUMBERS =     {12: [[5, 4], [6, 4], [7, 4], [8, 4], [9, 4]],
                 2: [[0, 5], [1, 5], [2, 5], [3, 5]],
                 1: [[2, 5], [3, 5], [4, 5], [5, 5]],
                 0: [[2, 5], [3, 5], [4, 5]],
@@ -89,11 +89,14 @@ class Matrix:
             hour = hour - 12
         if hour == 0:
             hour = 12
+
         if hour == 1:
             self.clear_word(NUMBERS[12])
         else:
             self.clear_word(NUMBERS[hour-1])
+
         if minute < 5 and hour == 1:
+            self.clear_word(NUMBERS[1])
             self.show_word(NUMBERS[0])
         else:
             self.show_word(NUMBERS[hour])
@@ -123,8 +126,8 @@ class Matrix:
         elif minute >= 35 and minute < 40:
             self.show_words([FÜNF_2, NACH, HALB])
         elif minute >= 40 and minute < 45:
-            self.clear_words([FÜNF_2, NACH])
-            self.show_words([ZWANZIG, VOR, HALB])
+            self.clear_words([FÜNF_2, NACH, HALB])
+            self.show_words([ZWANZIG, VOR])
         elif minute >= 45 and minute < 50:
             self.clear_words([ZWANZIG, HALB])
             self.show_words([VIERTEL, VOR])
@@ -143,8 +146,6 @@ class Matrix:
         self._show_minute(minute)
 
 
-
-# (year, month, day[, hour[, minute[, second[, microsecond[, tzinfo]]]]])
 # add the the same functionality like the machine.RTC class
 class RTCmock:
     def __init__(self, year, month, day, weekday, hour, minute, second, microsecond):
@@ -187,7 +188,7 @@ def main():
     matrix = Matrix(ROW_PINS)
     matrix.clear()
 
-    rtc = RTCmock(2024, 4, 23, 0, 12, 42, 0, 0)
+    rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
     rtc.change_speed(100)
     rtc.start()
 
