@@ -1,4 +1,6 @@
 import time
+from random import randint
+
 from machine import Pin
 from machine import Timer
 from machine import RTC
@@ -6,6 +8,7 @@ from neopixel import NeoPixel
 
 from networking import Client
 from networking import download_json_file, LINK
+import logging
 from logging import Logger
 
 # Static Variables for RTC
@@ -52,7 +55,7 @@ UHR =       [[7, 9], [8, 9], [9, 9]]
 
 ROW_PINS = [21, 19, 18, 5, 17, 16, 4, 0, 2, 15]
 
-logger = Logger()
+logger = Logger(logging.DEBUG)
 
 class Matrix:
     def __init__(self, row_pins):
@@ -189,6 +192,34 @@ class RTCmock:
         return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
 
 
+class Animation:
+    def __init__(self, matrix):
+        self.matrix = matrix
+        self.qty_col = 11
+        self.qty_row = 10
+        self.words = [
+            ES, IST, FÜNF_2, ZEHN_2, ZWANZIG, DREI_2,
+            VIERTEL, NACH, VOR, HALB, UHR
+        ]
+        self._add_numbers()
+
+    def _add_numbers(self):
+        for i in range(12):
+            self.words.append(NUMBERS[i])
+
+    def random_words(self, duration, on_dura=0.2):
+        duration = duration / on_dura
+        loops = 0
+        while True:
+            if loops == duration:
+                break
+            rand_num = randint(0, len(self.words)-1)
+            self.matrix.show_word(self.words[rand_num])
+            time.sleep(on_dura)
+            self.matrix.clear_word(self.words[rand_num])
+            loops = loops + 1
+
+
 def set_rtc(rtc, timeinfo_json):
     logger.info("Set RTC:")
     timeinfo = {}
@@ -212,6 +243,9 @@ def set_rtc(rtc, timeinfo_json):
 def main():
     matrix = Matrix(ROW_PINS)
     rtc = RTC()
+    ani = Animation(matrix)
+    matrix.clear()
+    ani.random_words(2)
 
     client = Client(logger)
     client.activate()
