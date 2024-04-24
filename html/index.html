@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESP Clock</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <section class="home">
+      <div class="content-wrapper">
+        <h1>WordClock</h1>
+        
+        <div class="btn-wrapper">
+            
+          <form action="/time" method="post">
+
+            <h2>Network 1</h2>
+            <label for="ssid1">SSID</label>
+            <input required type="text" name="ssid1" />
+            <label for="password1">Password</label>
+            <input required type="password" name="password1" />
+
+            <!-- <h2>Network 2</h2>
+            <label for="ssid2">SSID</label>
+            <input required type="text" name="ssid2" />
+            <label for="password2">Password</label>
+            <input required type="password" name="password2" />
+
+            <h2>Network 3</h2>
+            <label for="ssid3">SSID</label>
+            <input required type="text" name="ssid3" />
+            <label for="password3">Password</label>
+            <input required type="password" name="password3" /> -->
+
+            <input class="btn active submit-btn" type="submit" value="Submit" />
+
+          </form>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
