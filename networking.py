@@ -126,11 +126,16 @@ class Server:
         self.ap.active(True)
         self._configure_server()
     
-    def wait_for_connection(self):
+    def wait_for_connection(self, timeout=60):
         if not self.ap.isconnected():
             self.log.info('Waiting for connection...')
+            try_time = 0
             while not self.ap.isconnected():
+                if try_time >= timeout:
+                    self.log.info('Timeout')
+                    return
                 time.sleep(1)
+                try_time = try_time + 1
 
             time.sleep(1)
             self.log.info('Connected')
