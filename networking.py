@@ -99,7 +99,7 @@ class Server:
         self.ap = network.WLAN(network.AP_IF)
         self.log = logger
         self.optimize = micropython_optimize
-        self.ssid = 'ESP-Clock-AP'
+        self.ssid = 'WordClock-AP'
         self.ip = None
         self.subnet = None
         self.gateway = None
@@ -166,7 +166,7 @@ class Server:
 
         while True:
             response = s.accept()
-            self.wdt.feed()
+            # self.wdt.feed()
             client_socket = response[0]
             client_address = response[1]
 
@@ -185,7 +185,7 @@ class Server:
                     break
                 self.log.debug(h)
             
-            with open('/templates/test.html', 'r') as file:
+            with open('/html/index.html', 'r') as file:
                 data = file.read().encode()
                 client_stream.write(data)
 

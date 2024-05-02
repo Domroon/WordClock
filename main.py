@@ -6,10 +6,11 @@ from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
 
-from networking import Client
+from networking import Client, Server
 from networking import download_json_file, LINK
 import logging
 from logging import Logger
+import webserver
 
 # COLORS
 WHITE = [150, 150, 150]
@@ -258,6 +259,19 @@ def main():
     ani = Animation(matrix)
     matrix.clear()
     ani.random_words(2, random_color=True)
+
+    server = Server(logger)
+    server.activate()
+    server.wait_for_connection()
+    # server.receive_http_data()
+        
+    # start a microdot webserver
+    htmlserver = webserver.WebServer(logger)
+    htmlserver.start()
+
+    server.deactivate()
+    # self._change_mode('clock')
+    logger.info('Clock mode')
 
     client = Client(logger)
     client.activate()
