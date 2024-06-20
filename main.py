@@ -1,7 +1,7 @@
 import time
 from random import randint
 
-from machine import Pin
+from machine import Pin, SoftI2C, TouchPad
 from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
@@ -10,12 +10,14 @@ from networking import Client
 from networking import download_json_file, LINK
 import logging
 from logging import Logger
+from ds3231 import DS3231
 
 # COLORS
 WHITE = [150, 150, 150]
 RED = [150, 0, 0]
 GREEN = [0, 150, 0]
 BLUE = [0, 0, 150]
+YELLOW = [255, 255, 0]
 
 # Static Variables for RTC
 YEAR = 0
@@ -60,6 +62,8 @@ NUMBERS =     {12: [[5, 4], [6, 4], [7, 4], [8, 4], [9, 4]],
 UHR =       [[7, 9], [8, 9], [9, 9]]
 
 ROW_PINS = [21, 19, 18, 5, 17, 16, 4, 0, 2, 15]
+
+TOUCH_PAD = 27
 
 logger = Logger(logging.DEBUG)
 
@@ -252,20 +256,66 @@ def set_rtc(rtc, timeinfo_json):
     logger.info(rtc.datetime())
 
 
+def set_timekeeper(ds):
+    print("You are in the clock settings. Do you want to change the time (y/n)?")
+    while True:
+        user_input = input()
+        if user_input == "y":
+            year = int(input("Enter Year: "))
+            month = int(input("Enter Month: "))
+            mday = int(input("Enter Day: "))
+            hour = int(input("Enter Hour (24h format): "))
+            minute = int(input("Enter Minute: "))
+            second = int(input("Enter Second: ")) # Optional
+            print("Enter Weekday (0-6)")
+            print("0 - Sunday")
+            print("1 - Monday")
+            print("2 - Thuesday")
+            print("3 - Wednesday")
+            print("4 - Thursday")
+            print("5 - Friday")
+            print("6 - Saturday")
+            weekday = int(input())  # Optional
+            input("Press Enter to set the Time...")
+
+            datetime = (year, month, mday, hour, minute, second, weekday)
+            ds.datetime(datetime)
+            break
+        elif user_input == "n":
+            print("no")
+            break
+        else:
+            print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+
+
+def set_rtc_with_timekeer(rtc, timekeeper):
+    logger.info("Read datetime from timekeeper DS3231...")
+    rtc.datetime(timekeeper.datetime())
+    logger.info("Set internal RTC datetime to:")
+    logger.info("Year | Month | Day | Weekday | Hour | Minute | Second | Microseconds")
+    logger.info(rtc.datetime())
+
+
 def main():
+    touch = TouchPad(Pin(TOUCH_PAD))
     matrix = Matrix(ROW_PINS, [150, 150, 150])
     rtc = RTC()
     ani = Animation(matrix)
     matrix.clear()
     ani.random_words(2, random_color=True)
 
-    client = Client(logger)
-    client.activate()
-    client.search_wlan()
-    client.connect()
+    i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
+    timekeeper = DS3231(i2c)
 
-    timeinfo_json = download_json_file(LINK['datetime'])
-    set_rtc(rtc, timeinfo_json)
+    set_rtc_with_timekeer(rtc, timekeeper)
+
+    # client = Client(logger)
+    # client.activate()
+    # client.search_wlan()
+    # client.connect()
+    # timeinfo_json = download_json_file(LINK['datetime'])
+    # set_rtc(rtc, timeinfo_json)
+    
 
     matrix.clear()
 
@@ -274,6 +324,19 @@ def main():
     # rtc.start()
 
     while(True):
+        if touch.read() <= 100:
+            matrix.clear()
+            matrix._set_led(9, 1, YELLOW)
+            matrix._set_led(9, 2, YELLOW)
+            matrix._set_led(8, 4, YELLOW)
+            matrix._set_led(8, 5, YELLOW)
+            matrix._set_led(8, 6, YELLOW)
+            set_timekeeper(timekeeper)
+            logger.info("Set timekeeper DS3221 datetime to:")
+            logger.info("Year | Month | Day | Hour | Minute | Second | Weekday")
+            logger.info(timekeeper.datetime())
+            set_rtc_with_timekeer(rtc, timekeeper)
+            matrix.clear()
         current_datetime = rtc.datetime()
         matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
         time.sleep(1)
