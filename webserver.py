@@ -15,9 +15,16 @@ def static(request, path):
     return send_file('html/' + path)
 
 
-@app.get('/')
+@app.route('/', methods=['GET', 'POST'])
 def index(request):
+    if request.method == 'POST':
+        print("This is a post test")
+        ssid1 = request.form.get('ssid1')
+        print("ssid1:", ssid1)
+        pw1 = request.form.get('password1')
+        print("pw1:", pw1)
     return send_file('/html/index.html')
+
 
 @app.route('/time', methods=['GET', 'POST'])
 def set_time(request):
