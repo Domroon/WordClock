@@ -7,7 +7,7 @@ from machine import RTC
 from neopixel import NeoPixel
 
 from networking import Client, Server
-from networking import download_json_file, LINK
+from networking import download_json_file, LINK, change_stored_networks
 import logging
 from logging import Logger
 import webserver
@@ -254,43 +254,51 @@ def set_rtc(rtc, timeinfo_json):
 
 
 def main():
-    matrix = Matrix(ROW_PINS, [150, 150, 150])
-    rtc = RTC()
-    ani = Animation(matrix)
-    matrix.clear()
-    ani.random_words(2, random_color=True)
+    networks= [
+        {"ssid": "AlphaCentauri", "password": "1234"},
+        {"ssid": "Vodafone", "password": "geheim123"},
+        {"ssid": "fritzBox", "password": "fritzchen"}
+    ]
 
-    server = Server(logger)
-    server.activate()
-    server.wait_for_connection()
-    # server.receive_http_data()
+    change_stored_networks(networks)
+
+    # matrix = Matrix(ROW_PINS, [150, 150, 150])
+    # rtc = RTC()
+    # ani = Animation(matrix)
+    # matrix.clear()
+    # ani.random_words(2, random_color=True)
+
+    # server = Server(logger)
+    # server.activate()
+    # server.wait_for_connection()
+    # # server.receive_http_data()
         
-    # start a microdot webserver
-    htmlserver = webserver.WebServer(logger)
-    htmlserver.start()
+    # # start a microdot webserver
+    # htmlserver = webserver.WebServer(logger)
+    # htmlserver.start()
 
-    server.deactivate()
-    # self._change_mode('clock')
-    logger.info('Clock mode')
+    # server.deactivate()
+    # # self._change_mode('clock')
+    # logger.info('Clock mode')
 
-    client = Client(logger)
-    client.activate()
-    client.search_wlan()
-    client.connect()
+    # client = Client(logger)
+    # client.activate()
+    # client.search_wlan()
+    # client.connect()
 
-    timeinfo_json = download_json_file(LINK['datetime'])
-    set_rtc(rtc, timeinfo_json)
+    # timeinfo_json = download_json_file(LINK['datetime'])
+    # set_rtc(rtc, timeinfo_json)
 
-    matrix.clear()
+    # matrix.clear()
 
-    # rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
-    # rtc.change_speed(200)
-    # rtc.start()
+    # # rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
+    # # rtc.change_speed(200)
+    # # rtc.start()
 
-    while(True):
-        current_datetime = rtc.datetime()
-        matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
-        time.sleep(1)
+    # while(True):
+    #     current_datetime = rtc.datetime()
+    #     matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
+    #     time.sleep(1)
 
 
 if __name__ == '__main__':
