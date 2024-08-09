@@ -2,6 +2,7 @@ from machine import RTC
 
 from microdot import Microdot
 from microdot import send_file
+from networking import change_stored_networks
 
 
 app = Microdot()
@@ -15,14 +16,8 @@ def static(request, path):
     return send_file('html/' + path)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.get('/')
 def index(request):
-    if request.method == 'POST':
-        print("This is a post test")
-        ssid1 = request.form.get('ssid1')
-        print("ssid1:", ssid1)
-        pw1 = request.form.get('password1')
-        print("pw1:", pw1)
     return send_file('/html/index.html')
 
 
@@ -45,6 +40,27 @@ def set_time(request):
         print("datetime:", rtc.datetime())
         return send_file('html/success.html')
     return send_file('/html/time.html')
+
+
+@app.route('/network', methods=['GET', 'POST'])
+def network(request):
+    if request.method == 'POST':
+        ssid_1 = request.form.get('ssid1')
+        pw_1 = request.form.get('password1')
+        network_1 = {"ssid": ssid_1, "password": pw_1}
+        change_stored_networks([network_1])
+        return send_file('html/success_network.html')
+    return send_file('/html/network.html')
+
+
+@app.get('/settings')
+def settings(request):
+    return send_file('/html/settings.html')
+
+
+@app.get('/success_network')
+def success_network(request):
+    return send_file('/html/success_network.html')
 
 
 @app.get('/shutdown')
