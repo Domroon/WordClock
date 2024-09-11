@@ -199,8 +199,17 @@ class RTCmock:
             self.hour = 0
         # print(self.hour, ":", self.minute, ":", self.second)
 
-    def datetime(self):
-        return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
+    def datetime(self, datetime_data=None):
+        if datetime_data == None:
+            return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
+        self.year = datetime_data[0]
+        self.month = datetime_data[1]
+        self.day = datetime_data[2]
+        self.weekday = datetime_data[3]
+        self.hour = datetime_data[4]
+        self.minute = datetime_data[5]
+        self.second = datetime_data[6]
+        self.microseconds = datetime_data[7]
 
 
 class DS3231Mock:
@@ -320,10 +329,27 @@ def set_rtc_with_timekeeper(rtc, timekeeper):
     logger.info(rtc.datetime())
 
 
+def read_settings():
+    conf = {}
+    with open("settings.conf", 'r') as file:
+        for line in file:
+            line = line.split('=')
+            line[1] = line[1].replace('\n', '')
+            conf[line[0]] = line[1]
+    return conf
+
+
 def main():
+    conf = read_settings()
+    logger.info('Read configuration....')
+    logger.info('Configuration:')
+    print(conf)
+    if conf['enable_test_mode'] == 'True':
+        pass
+
     touch = TouchPad(Pin(TOUCH_PAD))
     matrix = Matrix(ROW_PINS, [150, 150, 150])
-    rtc = RTC()
+    rtc = RTC()        
     ani = Animation(matrix)
     matrix.clear()
     ani.random_words(2, random_color=True)
