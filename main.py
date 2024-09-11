@@ -63,14 +63,18 @@ UHR =       [[7, 9], [8, 9], [9, 9]]
 
 ROW_PINS = [21, 19, 18, 5, 17, 16, 4, 0, 2, 15]
 
+DOTS_PIN = 25
+
 TOUCH_PAD = 27
 
 logger = Logger(logging.DEBUG)
 
 class Matrix:
-    def __init__(self, row_pins, word_color):
+    def __init__(self, row_pins, word_color, dots_color):
         self.rows = self._get_rows(row_pins)
         self.word_color = word_color
+        self.dots_color = dots_color
+        self.dots = NeoPixel(Pin(DOTS_PIN, Pin.OUT), 4)
 
     def _get_rows(self, row_pins):
         rows = []
@@ -128,6 +132,24 @@ class Matrix:
             self.show_word(NUMBERS[hour], self.word_color)
 
     def _show_minute(self, minute):
+        if minute % 5 == 0:
+            self.dots.fill([0, 0, 0])
+        elif minute % 5 == 1:
+            self.dots[0] = self.dots_color
+        elif minute % 5 == 2:
+            self.dots[0] = self.dots_color
+            self.dots[1] = self.dots_color
+        elif minute % 5 == 3:
+            self.dots[0] = self.dots_color
+            self.dots[1] = self.dots_color
+            self.dots[2] = self.dots_color
+        elif minute % 5 == 4:
+            self.dots[0] = self.dots_color
+            self.dots[1] = self.dots_color
+            self.dots[2] = self.dots_color
+            self.dots[3] = self.dots_color
+        self.dots.write()
+
         if minute < 5:
             self.clear_words([FÜNF_2, VOR])
             self.show_word(UHR, self.word_color)
@@ -377,7 +399,7 @@ def read_settings():
 class Test:
     def __init__(self):
         self.touch = TouchPad(Pin(TOUCH_PAD))
-        self.matrix = Matrix(ROW_PINS, [150, 150, 150])
+        self.matrix = Matrix(ROW_PINS, WHITE, WHITE)
         self.rtc_mock = RTCmock(2024, 9, 11, 0, 15, 25, 0, 0)
         self.rtc = RTC() 
         # rtc_mock.change_speed(100)
@@ -391,7 +413,8 @@ class Test:
         self.timekeeper = Timekeeper(self.ds3231)
         self.test_list = [
             self.test_is_time_lost_true(self.timekeeper),
-            self.test_is_time_lost_false(self.timekeeper)
+            self.test_is_time_lost_false(self.timekeeper),
+            self.test_user_check_correct_times()
         ]
     
     def get_test_result_string(self, result):
@@ -412,6 +435,29 @@ class Test:
             return "OK \t test_is_time_lost_false"
         return "FAIL \t test_is_time_lost_false"
     
+    def test_user_check_correct_times(self):
+        print("The time from 11 a.m. to 1 p.m. will now be displayed in rapid succession. Make sure that everything is correct.")
+        input("When you are ready press enter...")
+        print("Currently showing the time...")
+        self.rtc_mock.datetime((2024, 9, 11, 0, 11, 0, 0, 0))
+        self.rtc_mock.change_speed(50)
+        self.rtc_mock.start()
+        self.matrix.clear()
+        while True:
+            current_datetime = self.rtc_mock.datetime()
+            if current_datetime[4] == 13:
+                break
+            self.matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
+            time.sleep(1)
+        while True:
+            user_input = input("Were all times correct? y/n")
+            if user_input == "y":
+                return "OK \t test_user_check_correct_times"
+            elif user_input == "n":
+                return "FAIL \t test_user_check_correct_times"
+            else:
+                print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+
     def run_tests(self):
         results = []
         error_counter = 0
@@ -444,7 +490,7 @@ def main():
         tests.run_tests()
 
     touch = TouchPad(Pin(TOUCH_PAD))
-    matrix = Matrix(ROW_PINS, [150, 150, 150])
+    matrix = Matrix(ROW_PINS, WHITE, WHITE)
     rtc = RTC()        
     ani = Animation(matrix)
     matrix.clear()
