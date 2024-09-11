@@ -203,6 +203,30 @@ class RTCmock:
         return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
 
 
+class DS3231Mock:
+    def __init__(self):
+        self.year = 2000        
+        self.month = 1
+        self.day = 1
+        self.weekday = 5
+        self.hour = 0
+        self.minute = 0
+        self.second = 0
+        self.microseconds = 0        
+
+    def datetime(self, datetime_data=None):
+        if datetime_data == None:
+            return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microseconds)
+        self.year = datetime_data[0]
+        self.month = datetime_data[1]
+        self.day = datetime_data[2]
+        self.weekday = datetime_data[3]
+        self.hour = datetime_data[4]
+        self.minute = datetime_data[5]
+        self.second = datetime_data[6]
+        self.microseconds = datetime_data[7]
+
+
 class Animation:
     def __init__(self, matrix):
         self.matrix = matrix
@@ -305,7 +329,7 @@ def main():
     ani.random_words(2, random_color=True)
 
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
-    timekeeper = DS3231(i2c)
+    timekeeper = DS3231(i2c) # timekeeper = DS3231Mock()
 
     set_rtc_with_timekeeper(rtc, timekeeper)
 
