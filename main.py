@@ -113,6 +113,10 @@ class Matrix:
         self._set_led(8, 4, YELLOW)
         self._set_led(8, 5, YELLOW)
         self._set_led(8, 6, YELLOW)
+    
+    def show_empty_battery(self):
+        self._set_led(0, 0, RED)
+        self._set_led(4, 3, RED)
 
     def _show_hour(self, hour, minute):
         if(hour > 12):
@@ -380,20 +384,11 @@ def read_settings():
     return conf
 
 
-# def execute_tests():
-#     # preparing objects for th tests
-#     touch = TouchPad(Pin(TOUCH_PAD))
-#     matrix = Matrix(ROW_PINS, [150, 150, 150])
-#     rtc = RTCmock(2024, 9, 11, 0, 15, 25, 0, 0)
-#     rtc.change_speed(100)
-#     rtc.start()
-#     ani = Animation(matrix)
-#     matrix.clear()
-#     ds3231_mock = DS3231Mock()
-#     timekeeper_mock = Timekeeper(ds3231_mock)
-#     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
-#     ds3231 = DS3231(i2c)
-#     timekeeper = Timekeeper(ds3231)
+def check_empty_battery(timekeeper, matrix):
+    if timekeeper.is_time_lost():
+        matrix.show_empty_battery()
+        time.sleep(6)
+        matrix.clear()
 
 
 class Test:
@@ -498,10 +493,12 @@ def main():
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
     ds3231 = DS3231(i2c)
     timekeeper = Timekeeper(ds3231)
+    check_empty_battery(timekeeper, matrix)
 
     set_rtc_with_timekeeper(rtc, timekeeper)
 
     matrix.clear()
+    matrix.dots.fill([0, 0, 0])
 
     while(True):
         if touch.read() <= 100:
