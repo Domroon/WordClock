@@ -288,7 +288,7 @@ def set_timekeeper(ds):
             print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
 
 
-def set_rtc_with_timekeer(rtc, timekeeper):
+def set_rtc_with_timekeeper(rtc, timekeeper):
     logger.info("Read datetime from timekeeper DS3231...")
     rtc.datetime(timekeeper.datetime())
     logger.info("Set internal RTC datetime to:")
@@ -307,7 +307,7 @@ def main():
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
     timekeeper = DS3231(i2c)
 
-    set_rtc_with_timekeer(rtc, timekeeper)
+    set_rtc_with_timekeeper(rtc, timekeeper)
 
     # client = Client(logger)
     # client.activate()
@@ -335,7 +335,7 @@ def main():
             logger.info("Set timekeeper DS3221 datetime to:")
             logger.info("Year | Month | Day | Hour | Minute | Second | Weekday")
             logger.info(timekeeper.datetime())
-            set_rtc_with_timekeer(rtc, timekeeper)
+            set_rtc_with_timekeeper(rtc, timekeeper)
             matrix.clear()
         current_datetime = rtc.datetime()
         matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
