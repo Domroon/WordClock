@@ -63,14 +63,18 @@ UHR =       [[7, 9], [8, 9], [9, 9]]
 
 ROW_PINS = [21, 19, 18, 5, 17, 16, 4, 0, 2, 15]
 
+DOTS_PIN = 25
+
 TOUCH_PAD = 27
 
 logger = Logger(logging.DEBUG)
 
 class Matrix:
-    def __init__(self, row_pins, word_color):
+    def __init__(self, row_pins, word_color, dots_color):
         self.rows = self._get_rows(row_pins)
         self.word_color = word_color
+        self.dots_color = dots_color
+        self.dots = NeoPixel(Pin(DOTS_PIN, Pin.OUT), 4)
 
     def _get_rows(self, row_pins):
         rows = []
@@ -103,6 +107,17 @@ class Matrix:
         for word in word_list:
             self.show_word(word, color=[0, 0, 0])
 
+    def show_set_mode(self):
+        self._set_led(9, 1, YELLOW)
+        self._set_led(9, 2, YELLOW)
+        self._set_led(8, 4, YELLOW)
+        self._set_led(8, 5, YELLOW)
+        self._set_led(8, 6, YELLOW)
+    
+    def show_empty_battery(self):
+        self._set_led(0, 0, RED)
+        self._set_led(4, 3, RED)
+
     def _show_hour(self, hour, minute):
         if(hour > 12):
             hour = hour - 12
@@ -121,6 +136,24 @@ class Matrix:
             self.show_word(NUMBERS[hour], self.word_color)
 
     def _show_minute(self, minute):
+        if minute % 5 == 0:
+            self.dots.fill([0, 0, 0])
+        elif minute % 5 == 1:
+            self.dots[0] = self.dots_color
+        elif minute % 5 == 2:
+            self.dots[0] = self.dots_color
+            self.dots[1] = self.dots_color
+        elif minute % 5 == 3:
+            self.dots[0] = self.dots_color
+            self.dots[1] = self.dots_color
+            self.dots[2] = self.dots_color
+        elif minute % 5 == 4:
+            self.dots[0] = self.dots_color
+            self.dots[1] = self.dots_color
+            self.dots[2] = self.dots_color
+            self.dots[3] = self.dots_color
+        self.dots.write()
+
         if minute < 5:
             self.clear_words([FÜNF_2, VOR])
             self.show_word(UHR, self.word_color)
@@ -199,8 +232,85 @@ class RTCmock:
             self.hour = 0
         # print(self.hour, ":", self.minute, ":", self.second)
 
-    def datetime(self):
-        return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
+    def datetime(self, datetime_data=None):
+        if datetime_data == None:
+            return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microsecond)
+        self.year = datetime_data[0]
+        self.month = datetime_data[1]
+        self.day = datetime_data[2]
+        self.weekday = datetime_data[3]
+        self.hour = datetime_data[4]
+        self.minute = datetime_data[5]
+        self.second = datetime_data[6]
+        self.microseconds = datetime_data[7]
+
+
+class Timekeeper():
+    def __init__(self, ds3231):
+        self.ds3231 = ds3231
+        
+    def set_by_cli(self):
+        print("You are in the clock settings. Do you want to change the time (y/n)?")
+        while True:
+            user_input = input()
+            if user_input == "y":
+                year = int(input("Enter Year: "))
+                month = int(input("Enter Month: "))
+                mday = int(input("Enter Day: "))
+                hour = int(input("Enter Hour (24h format): "))
+                minute = int(input("Enter Minute: "))
+                second = int(input("Enter Second: ")) # Optional
+                print("Enter Weekday (0-6)")
+                print("0 - Sunday")
+                print("1 - Monday")
+                print("2 - Thuesday")
+                print("3 - Wednesday")
+                print("4 - Thursday")
+                print("5 - Friday")
+                print("6 - Saturday")
+                weekday = int(input())  # Optional
+                input("Press Enter to set the Time...")
+
+                datetime = (year, month, mday, hour, minute, second, weekday)
+                self.ds3231.datetime(datetime)
+                break
+            elif user_input == "n":
+                print("no")
+                break
+            else:
+                print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+
+    def get_datetime(self):
+        return self.ds3231.datetime()
+    
+    def is_time_lost(self):
+        if(self.get_datetime()[0] == 2000):
+            return True
+        return False
+
+
+class DS3231Mock:
+    def __init__(self):
+        self.year = 2000        
+        self.month = 1
+        self.day = 1
+        self.weekday = 5
+        self.hour = 0
+        self.minute = 0
+        self.second = 0
+        self.microseconds = 0        
+
+    def datetime(self, datetime_data=None):
+        if datetime_data == None:
+            return (self.year, self.month, self.day, self.weekday, self.hour, self.minute, self.second, self.microseconds)
+        self.year = datetime_data[0]
+        self.month = datetime_data[1]
+        self.day = datetime_data[2]
+        self.weekday = datetime_data[3]
+        self.hour = datetime_data[4]
+        self.minute = datetime_data[5]
+        self.second = datetime_data[6]
+        self.microseconds = datetime_data[7]
 
 
 class Animation:
@@ -256,86 +366,146 @@ def set_rtc(rtc, timeinfo_json):
     logger.info(rtc.datetime())
 
 
-def set_timekeeper(ds):
-    print("You are in the clock settings. Do you want to change the time (y/n)?")
-    while True:
-        user_input = input()
-        if user_input == "y":
-            year = int(input("Enter Year: "))
-            month = int(input("Enter Month: "))
-            mday = int(input("Enter Day: "))
-            hour = int(input("Enter Hour (24h format): "))
-            minute = int(input("Enter Minute: "))
-            second = int(input("Enter Second: ")) # Optional
-            print("Enter Weekday (0-6)")
-            print("0 - Sunday")
-            print("1 - Monday")
-            print("2 - Thuesday")
-            print("3 - Wednesday")
-            print("4 - Thursday")
-            print("5 - Friday")
-            print("6 - Saturday")
-            weekday = int(input())  # Optional
-            input("Press Enter to set the Time...")
-
-            datetime = (year, month, mday, hour, minute, second, weekday)
-            ds.datetime(datetime)
-            break
-        elif user_input == "n":
-            print("no")
-            break
-        else:
-            print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
-
-
-def set_rtc_with_timekeer(rtc, timekeeper):
+def set_rtc_with_timekeeper(rtc, timekeeper):
     logger.info("Read datetime from timekeeper DS3231...")
-    rtc.datetime(timekeeper.datetime())
+    rtc.datetime(timekeeper.get_datetime())
     logger.info("Set internal RTC datetime to:")
     logger.info("Year | Month | Day | Weekday | Hour | Minute | Second | Microseconds")
     logger.info(rtc.datetime())
 
 
+def read_settings():
+    conf = {}
+    with open("settings.conf", 'r') as file:
+        for line in file:
+            line = line.split('=')
+            line[1] = line[1].replace('\n', '')
+            conf[line[0]] = line[1]
+    return conf
+
+
+def check_empty_battery(timekeeper, matrix):
+    if timekeeper.is_time_lost():
+        matrix.show_empty_battery()
+        time.sleep(6)
+        matrix.clear()
+
+
+class Test:
+    def __init__(self):
+        self.touch = TouchPad(Pin(TOUCH_PAD))
+        self.matrix = Matrix(ROW_PINS, WHITE, WHITE)
+        self.rtc_mock = RTCmock(2024, 9, 11, 0, 15, 25, 0, 0)
+        self.rtc = RTC() 
+        # rtc_mock.change_speed(100)
+        # rtc_mock.start()
+        self.ani = Animation(self.matrix)
+        # matrix.clear()
+        self.ds3231_mock = DS3231Mock()
+        self.timekeeper_mock = Timekeeper(self.ds3231_mock)
+        self.i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
+        self.ds3231 = DS3231(self.i2c)
+        self.timekeeper = Timekeeper(self.ds3231)
+        self.test_list = [
+            self.test_is_time_lost_true(self.timekeeper),
+            self.test_is_time_lost_false(self.timekeeper),
+            self.test_user_check_correct_times()
+        ]
+    
+    def get_test_result_string(self, result):
+        if result:
+            return "OK"
+        return "FAIL"
+    
+    def test_is_time_lost_true(self, timekeeper):
+        print("Remove the battery from the Timekeeper then disconnect the device from the power supply...")
+        input("If you have already removed the battery: Press enter...")
+        if self.timekeeper.is_time_lost() == True:
+            return "OK \t test_is_time_lost_true"
+        return "FAIL \t test_is_time_lost_true"
+
+    def test_is_time_lost_false(self, timekeeper):
+        self.timekeeper.set_by_cli()
+        if self.timekeeper.is_time_lost() == False:
+            return "OK \t test_is_time_lost_false"
+        return "FAIL \t test_is_time_lost_false"
+    
+    def test_user_check_correct_times(self):
+        print("The time from 11 a.m. to 1 p.m. will now be displayed in rapid succession. Make sure that everything is correct.")
+        input("When you are ready press enter...")
+        print("Currently showing the time...")
+        self.rtc_mock.datetime((2024, 9, 11, 0, 11, 0, 0, 0))
+        self.rtc_mock.change_speed(50)
+        self.rtc_mock.start()
+        self.matrix.clear()
+        while True:
+            current_datetime = self.rtc_mock.datetime()
+            if current_datetime[4] == 13:
+                break
+            self.matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
+            time.sleep(1)
+        while True:
+            user_input = input("Were all times correct? y/n")
+            if user_input == "y":
+                return "OK \t test_user_check_correct_times"
+            elif user_input == "n":
+                return "FAIL \t test_user_check_correct_times"
+            else:
+                print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+
+    def run_tests(self):
+        results = []
+        error_counter = 0
+        for test in self.test_list:
+            print(test)
+            results.append(test)
+
+        for result in results:
+            if "FAIL" in result:
+                error_counter = error_counter + 1
+
+        if error_counter == 0:
+            print("All tests were successful :)")
+        else:
+            print(error_counter, " test(s) failed :(")
+
+        input('All tests are executed. Press enter to execute the normal mode...')
+        input
+
+
+
 def main():
+    conf = read_settings()
+    logger.info('Read configuration....')
+    logger.info('Configuration:')
+    print(conf)
+    if conf['enable_test_mode'] == 'True':
+        logger.info('Run Tests')
+        tests = Test()
+        tests.run_tests()
+
     touch = TouchPad(Pin(TOUCH_PAD))
-    matrix = Matrix(ROW_PINS, [150, 150, 150])
-    rtc = RTC()
+    matrix = Matrix(ROW_PINS, WHITE, WHITE)
+    rtc = RTC()        
     ani = Animation(matrix)
     matrix.clear()
     ani.random_words(2, random_color=True)
-
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
-    timekeeper = DS3231(i2c)
+    ds3231 = DS3231(i2c)
+    timekeeper = Timekeeper(ds3231)
+    check_empty_battery(timekeeper, matrix)
 
-    set_rtc_with_timekeer(rtc, timekeeper)
-
-    # client = Client(logger)
-    # client.activate()
-    # client.search_wlan()
-    # client.connect()
-    # timeinfo_json = download_json_file(LINK['datetime'])
-    # set_rtc(rtc, timeinfo_json)
-    
+    set_rtc_with_timekeeper(rtc, timekeeper)
 
     matrix.clear()
-
-    # rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
-    # rtc.change_speed(200)
-    # rtc.start()
+    matrix.dots.fill([0, 0, 0])
 
     while(True):
         if touch.read() <= 100:
             matrix.clear()
-            matrix._set_led(9, 1, YELLOW)
-            matrix._set_led(9, 2, YELLOW)
-            matrix._set_led(8, 4, YELLOW)
-            matrix._set_led(8, 5, YELLOW)
-            matrix._set_led(8, 6, YELLOW)
-            set_timekeeper(timekeeper)
-            logger.info("Set timekeeper DS3221 datetime to:")
-            logger.info("Year | Month | Day | Hour | Minute | Second | Weekday")
-            logger.info(timekeeper.datetime())
-            set_rtc_with_timekeer(rtc, timekeeper)
+            matrix.show_set_mode()
+            timekeeper.set_by_cli()
+            rtc.datetime(timekeeper.get_datetime())
             matrix.clear()
         current_datetime = rtc.datetime()
         matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
