@@ -103,6 +103,13 @@ class Matrix:
         for word in word_list:
             self.show_word(word, color=[0, 0, 0])
 
+    def show_set_mode(self):
+        self._set_led(9, 1, YELLOW)
+        self._set_led(9, 2, YELLOW)
+        self._set_led(8, 4, YELLOW)
+        self._set_led(8, 5, YELLOW)
+        self._set_led(8, 6, YELLOW)
+
     def _show_hour(self, hour, minute):
         if(hour > 12):
             hour = hour - 12
@@ -212,6 +219,51 @@ class RTCmock:
         self.microseconds = datetime_data[7]
 
 
+class Timekeeper():
+    def __init__(self):
+        self.i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
+        self.ds3231 = DS3231(self.i2c)
+        
+    def set_by_cli(self):
+        print("You are in the clock settings. Do you want to change the time (y/n)?")
+        while True:
+            user_input = input()
+            if user_input == "y":
+                year = int(input("Enter Year: "))
+                month = int(input("Enter Month: "))
+                mday = int(input("Enter Day: "))
+                hour = int(input("Enter Hour (24h format): "))
+                minute = int(input("Enter Minute: "))
+                second = int(input("Enter Second: ")) # Optional
+                print("Enter Weekday (0-6)")
+                print("0 - Sunday")
+                print("1 - Monday")
+                print("2 - Thuesday")
+                print("3 - Wednesday")
+                print("4 - Thursday")
+                print("5 - Friday")
+                print("6 - Saturday")
+                weekday = int(input())  # Optional
+                input("Press Enter to set the Time...")
+
+                datetime = (year, month, mday, hour, minute, second, weekday)
+                self.ds3231.datetime(datetime)
+                break
+            elif user_input == "n":
+                print("no")
+                break
+            else:
+                print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+
+    def get_datetime(self):
+        return self.ds3231.datetime()
+    
+    def is_time_lost(self):
+        if(self.get_datetime()[0] == 2000):
+            return True
+        return False
+
+
 class DS3231Mock:
     def __init__(self):
         self.year = 2000        
@@ -289,41 +341,9 @@ def set_rtc(rtc, timeinfo_json):
     logger.info(rtc.datetime())
 
 
-def set_timekeeper(ds):
-    print("You are in the clock settings. Do you want to change the time (y/n)?")
-    while True:
-        user_input = input()
-        if user_input == "y":
-            year = int(input("Enter Year: "))
-            month = int(input("Enter Month: "))
-            mday = int(input("Enter Day: "))
-            hour = int(input("Enter Hour (24h format): "))
-            minute = int(input("Enter Minute: "))
-            second = int(input("Enter Second: ")) # Optional
-            print("Enter Weekday (0-6)")
-            print("0 - Sunday")
-            print("1 - Monday")
-            print("2 - Thuesday")
-            print("3 - Wednesday")
-            print("4 - Thursday")
-            print("5 - Friday")
-            print("6 - Saturday")
-            weekday = int(input())  # Optional
-            input("Press Enter to set the Time...")
-
-            datetime = (year, month, mday, hour, minute, second, weekday)
-            ds.datetime(datetime)
-            break
-        elif user_input == "n":
-            print("no")
-            break
-        else:
-            print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
-
-
 def set_rtc_with_timekeeper(rtc, timekeeper):
     logger.info("Read datetime from timekeeper DS3231...")
-    rtc.datetime(timekeeper.datetime())
+    rtc.datetime(timekeeper.get_datetime())
     logger.info("Set internal RTC datetime to:")
     logger.info("Year | Month | Day | Weekday | Hour | Minute | Second | Microseconds")
     logger.info(rtc.datetime())
@@ -354,38 +374,18 @@ def main():
     matrix.clear()
     ani.random_words(2, random_color=True)
 
-    i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
-    timekeeper = DS3231(i2c) # timekeeper = DS3231Mock()
+    timekeeper = Timekeeper()
 
     set_rtc_with_timekeeper(rtc, timekeeper)
 
-    # client = Client(logger)
-    # client.activate()
-    # client.search_wlan()
-    # client.connect()
-    # timeinfo_json = download_json_file(LINK['datetime'])
-    # set_rtc(rtc, timeinfo_json)
-    
-
     matrix.clear()
-
-    # rtc = RTCmock(2024, 4, 23, 0, 12, 0, 0, 0)
-    # rtc.change_speed(200)
-    # rtc.start()
 
     while(True):
         if touch.read() <= 100:
             matrix.clear()
-            matrix._set_led(9, 1, YELLOW)
-            matrix._set_led(9, 2, YELLOW)
-            matrix._set_led(8, 4, YELLOW)
-            matrix._set_led(8, 5, YELLOW)
-            matrix._set_led(8, 6, YELLOW)
-            set_timekeeper(timekeeper)
-            logger.info("Set timekeeper DS3221 datetime to:")
-            logger.info("Year | Month | Day | Hour | Minute | Second | Weekday")
-            logger.info(timekeeper.datetime())
-            set_rtc_with_timekeeper(rtc, timekeeper)
+            matrix.show_set_mode()
+            timekeeper.set_by_cli()
+            rtc.datetime(timekeeper.get_datetime())
             matrix.clear()
         current_datetime = rtc.datetime()
         matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
