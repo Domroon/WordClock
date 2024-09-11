@@ -220,9 +220,8 @@ class RTCmock:
 
 
 class Timekeeper():
-    def __init__(self):
-        self.i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
-        self.ds3231 = DS3231(self.i2c)
+    def __init__(self, ds3231):
+        self.ds3231 = ds3231
         
     def set_by_cli(self):
         print("You are in the clock settings. Do you want to change the time (y/n)?")
@@ -359,13 +358,90 @@ def read_settings():
     return conf
 
 
+# def execute_tests():
+#     # preparing objects for th tests
+#     touch = TouchPad(Pin(TOUCH_PAD))
+#     matrix = Matrix(ROW_PINS, [150, 150, 150])
+#     rtc = RTCmock(2024, 9, 11, 0, 15, 25, 0, 0)
+#     rtc.change_speed(100)
+#     rtc.start()
+#     ani = Animation(matrix)
+#     matrix.clear()
+#     ds3231_mock = DS3231Mock()
+#     timekeeper_mock = Timekeeper(ds3231_mock)
+#     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
+#     ds3231 = DS3231(i2c)
+#     timekeeper = Timekeeper(ds3231)
+
+
+class Test:
+    def __init__(self):
+        self.touch = TouchPad(Pin(TOUCH_PAD))
+        self.matrix = Matrix(ROW_PINS, [150, 150, 150])
+        self.rtc_mock = RTCmock(2024, 9, 11, 0, 15, 25, 0, 0)
+        self.rtc = RTC() 
+        # rtc_mock.change_speed(100)
+        # rtc_mock.start()
+        self.ani = Animation(self.matrix)
+        # matrix.clear()
+        self.ds3231_mock = DS3231Mock()
+        self.timekeeper_mock = Timekeeper(self.ds3231_mock)
+        self.i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
+        self.ds3231 = DS3231(self.i2c)
+        self.timekeeper = Timekeeper(self.ds3231)
+        self.test_list = [
+            self.test_is_time_lost_true(self.timekeeper),
+            self.test_is_time_lost_false(self.timekeeper)
+        ]
+    
+    def get_test_result_string(self, result):
+        if result:
+            return "OK"
+        return "FAIL"
+    
+    def test_is_time_lost_true(self, timekeeper):
+        print("Remove the battery from the Timekeeper then disconnect the device from the power supply...")
+        input("If you have already removed the battery: Press enter...")
+        if self.timekeeper.is_time_lost() == True:
+            return "OK \t test_is_time_lost_true"
+        return "FAIL \t test_is_time_lost_true"
+
+    def test_is_time_lost_false(self, timekeeper):
+        self.timekeeper.set_by_cli()
+        if self.timekeeper.is_time_lost() == False:
+            return "OK \t test_is_time_lost_false"
+        return "FAIL \t test_is_time_lost_false"
+    
+    def run_tests(self):
+        results = []
+        error_counter = 0
+        for test in self.test_list:
+            print(test)
+            results.append(test)
+
+        for result in results:
+            if "FAIL" in result:
+                error_counter = error_counter + 1
+
+        if error_counter == 0:
+            print("All tests were successful :)")
+        else:
+            print(error_counter, " test(s) failed :(")
+
+        input('All tests are executed. Press enter to execute the normal mode...')
+        input
+
+
+
 def main():
     conf = read_settings()
     logger.info('Read configuration....')
     logger.info('Configuration:')
     print(conf)
     if conf['enable_test_mode'] == 'True':
-        pass
+        logger.info('Run Tests')
+        tests = Test()
+        tests.run_tests()
 
     touch = TouchPad(Pin(TOUCH_PAD))
     matrix = Matrix(ROW_PINS, [150, 150, 150])
@@ -373,8 +449,9 @@ def main():
     ani = Animation(matrix)
     matrix.clear()
     ani.random_words(2, random_color=True)
-
-    timekeeper = Timekeeper()
+    i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
+    ds3231 = DS3231(i2c)
+    timekeeper = Timekeeper(ds3231)
 
     set_rtc_with_timekeeper(rtc, timekeeper)
 
