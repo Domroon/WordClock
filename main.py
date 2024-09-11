@@ -6,11 +6,11 @@ from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
 
-from networking import Client
-from networking import download_json_file, LINK
+from networking import Server
 import logging
 from logging import Logger
 from ds3231 import DS3231
+import webserver
 
 # COLORS
 WHITE = [150, 150, 150]
@@ -473,7 +473,6 @@ class Test:
         input
 
 
-
 def main():
     conf = read_settings()
     logger.info('Read configuration....')
@@ -504,8 +503,14 @@ def main():
         if touch.read() <= 100:
             matrix.clear()
             matrix.show_set_mode()
-            timekeeper.set_by_cli()
-            rtc.datetime(timekeeper.get_datetime())
+            # timekeeper.set_by_cli()
+            # rtc.datetime(timekeeper.get_datetime())
+            server = Server(logger)
+            htmlserver = webserver.WebServer(logger)
+            server.activate()
+            server.wait_for_connection()
+            htmlserver.start()
+            server.deactivate()
             matrix.clear()
         current_datetime = rtc.datetime()
         matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
