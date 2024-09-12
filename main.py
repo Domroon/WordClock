@@ -73,9 +73,18 @@ logger = Logger(logging.DEBUG)
 class Matrix:
     def __init__(self, row_pins, word_color, dots_color):
         self.rows = self._get_rows(row_pins)
-        self.word_color = word_color
-        self.dots_color = dots_color
+        self.word_color = self._convert_color_string(word_color)
+        self.dots_color = self._convert_color_string(dots_color)
         self.dots = NeoPixel(Pin(DOTS_PIN, Pin.OUT), 4)
+
+    def _convert_color_string(self, color_string):
+        color_string = color_string.replace("[", "")
+        color_string = color_string.replace("]", "")
+        color_str = color_string.split(',')
+        color = []
+        for elem in color_str:
+            color.append(int(elem))
+        return color
 
     def _get_rows(self, row_pins):
         rows = []
@@ -584,9 +593,10 @@ def main():
         logger.info('Run Tests')
         tests = Test()
         tests.run_tests()
-
+    
     touch = TouchPad(Pin(TOUCH_PAD))
-    matrix = Matrix(ROW_PINS, WHITE, WHITE)
+    matrix = Matrix(ROW_PINS, conf['text_color'], conf['dot_color'])
+    matrix._convert_color_string(conf['text_color'])
     rtc = RTC()        
     ani = Animation(matrix)
     matrix.clear()
