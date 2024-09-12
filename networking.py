@@ -32,6 +32,15 @@ class InternetError(Exception):
     """Raises when the Router have no connection to the Internet"""
 
 
+def change_stored_networks(networks_dict_list):
+    with open("stored_networks.txt", 'w') as file:
+        for network in networks_dict_list:
+            file.write(network['ssid'])
+            file.write("|")
+            file.write(network["password"])
+            file.write("\n")
+
+
 class Client:
     def __init__(self, logger):
         self.wlan = network.WLAN(network.STA_IF)

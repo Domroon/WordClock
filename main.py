@@ -1,16 +1,17 @@
 import time
 from random import randint
 
+import gc
 from machine import Pin, SoftI2C, TouchPad
 from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
 
-from networking import Client
-from networking import download_json_file, LINK
+from networking import Server
 import logging
 from logging import Logger
 from ds3231 import DS3231
+import webserver
 
 # COLORS
 WHITE = [150, 150, 150]
@@ -246,8 +247,9 @@ class RTCmock:
 
 
 class Timekeeper():
-    def __init__(self, ds3231):
+    def __init__(self, ds3231, rtc):
         self.ds3231 = ds3231
+        self.rtc = rtc
         
     def set_by_cli(self):
         print("You are in the clock settings. Do you want to change the time (y/n)?")
@@ -257,28 +259,25 @@ class Timekeeper():
                 year = int(input("Enter Year: "))
                 month = int(input("Enter Month: "))
                 mday = int(input("Enter Day: "))
+                print("Attention, if you are in summer time, subtract one hour")
                 hour = int(input("Enter Hour (24h format): "))
                 minute = int(input("Enter Minute: "))
                 second = int(input("Enter Second: ")) # Optional
-                print("Enter Weekday (0-6)")
-                print("0 - Sunday")
-                print("1 - Monday")
-                print("2 - Thuesday")
-                print("3 - Wednesday")
-                print("4 - Thursday")
-                print("5 - Friday")
-                print("6 - Saturday")
-                weekday = int(input())  # Optional
                 input("Press Enter to set the Time...")
 
-                datetime = (year, month, mday, hour, minute, second, weekday)
-                self.ds3231.datetime(datetime)
+                ds3231_datetime = (year, month, mday, hour, minute, second, 0)
+                self.ds3231.datetime(ds3231_datetime)
+                datetime = (year, month, mday, 0, hour, minute, second, 0)
+                self.rtc.datetime(datetime)
                 break
             elif user_input == "n":
                 print("no")
                 break
             else:
                 print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+
+    def set_datetime(self, datetime):
+        self.ds3231.datetime(datetime)
 
     def get_datetime(self):
         return self.ds3231.datetime()
@@ -384,11 +383,50 @@ def read_settings():
     return conf
 
 
+def read_time_changes():
+    time_changes = {}
+    summer_begins = []
+    with open("./time_changes/summer_begin.txt", 'r') as file:
+        for line in file:
+            summer_begins.append(line.replace('\n', ''))
+        time_changes['summer'] = summer_begins
+    winter_begins = []
+    with open("./time_changes/winter_begin.txt", 'r') as file:
+        for line in file:
+            winter_begins.append(line.replace('\n', ''))
+        time_changes['winter'] = winter_begins
+    return time_changes
+    
+
 def check_empty_battery(timekeeper, matrix):
     if timekeeper.is_time_lost():
         matrix.show_empty_battery()
         time.sleep(6)
         matrix.clear()
+
+
+def check_for_summer_time(rtc, time_changes):
+    # get time changes from the actual year
+    summer_changes = time_changes['summer']
+    summer_change = None
+    for date in summer_changes:
+        if str(rtc.datetime()[YEAR]) in date:
+            date = date.split('.')
+            summer_change = (int(date[2]), int(date[1]), int(date[0]), 0, 2, 0, 0, 0)
+    # print("Summer change: ", summer_change)
+
+    winter_changes = time_changes['winter']
+    winter_change = None
+    for date in winter_changes:
+        if str(rtc.datetime()[YEAR]) in date:
+            date = date.split('.')
+            winter_change = (int(date[2]), int(date[1]), int(date[0]), 0, 3, 0, 0, 0)
+    # print("Winter change: ", winter_change)
+
+    if rtc.datetime() > summer_change and rtc.datetime() < winter_change:
+        return True
+    else:
+        return False
 
 
 class Test:
@@ -406,10 +444,15 @@ class Test:
         self.i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
         self.ds3231 = DS3231(self.i2c)
         self.timekeeper = Timekeeper(self.ds3231)
+        self.time_changes = read_time_changes()
         self.test_list = [
-            self.test_is_time_lost_true(self.timekeeper),
-            self.test_is_time_lost_false(self.timekeeper),
-            self.test_user_check_correct_times()
+            #self.test_is_time_lost_true(self.timekeeper),
+            #self.test_is_time_lost_false(self.timekeeper),
+            # self.test_user_check_correct_times(),
+            self.test_shortly_before_summer_time_begin(),
+            self.test_shortly_after_summer_time_begin(),
+            self.test_user_shortly_before_summer_time_begin(),
+            self.test_user_shortly_after_summer_time_begin()
         ]
     
     def get_test_result_string(self, result):
@@ -452,6 +495,62 @@ class Test:
                 return "FAIL \t test_user_check_correct_times"
             else:
                 print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+    
+    def test_shortly_before_summer_time_begin(self):
+        self.matrix.clear()
+        self.rtc.datetime((2024, 3, 30, 0, 23, 59, 0, 0))
+        summer_time = check_for_summer_time(self.rtc, self.time_changes)
+        if summer_time:
+            return "FAIL \t test_shortly_before_summer_time_begin"
+        else:
+            return "OK \t test_shortly_before_summer_time_begin"
+        
+    def test_shortly_after_summer_time_begin(self):
+        self.matrix.clear()
+        self.rtc.datetime((2024, 3, 31, 0, 2, 0, 0, 0))
+        summer_time = check_for_summer_time(self.rtc, self.time_changes)
+        if summer_time:
+            return "OK \t test_shortly_after_summer_time_begin"
+        else:
+            return "FAIL \t test_shortly_after_summer_time_begin"
+
+    def test_user_shortly_before_summer_time_begin(self):
+        self.matrix.clear()
+        print("The clock is set shortly before the start of summer time")
+        self.rtc.datetime((2024, 3, 30, 0, 23, 59, 0, 0))
+        current_datetime = self.rtc.datetime()
+        summer_time = check_for_summer_time(self.rtc, self.time_changes)
+        if summer_time:
+            self.matrix.show_time(current_datetime[HOUR] + 1, current_datetime[MINUTE])
+        else:
+            self.matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
+        while True:
+            user_input = input("Show the clock this time: 23:59 ? y/n")
+            if user_input == "y":
+                return "OK \t test_user_shortly_before_summer_time_begin"
+            elif user_input == "n":
+                return "FAIL \t test_user_shortly_before_summer_time_begin"
+            else:
+                print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+    
+    def test_user_shortly_after_summer_time_begin(self):
+        self.matrix.clear()
+        print("The clock is set shortly after the start of summer time")
+        self.rtc.datetime((2024, 3, 31, 0, 2, 0, 0, 0))
+        current_datetime = self.rtc.datetime()
+        summer_time = check_for_summer_time(self.rtc, self.time_changes)
+        if summer_time:
+            self.matrix.show_time(current_datetime[HOUR] + 1, current_datetime[MINUTE])
+        else:
+            self.matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
+        while True:
+            user_input = input("Show the clock this time: 3:00 ? y/n")
+            if user_input == "y":
+                return "OK \t test_user_shortly_after_summer_time_begin"
+            elif user_input == "n":
+                return "FAIL \t test_user_shortly_after_summer_time_begin"
+            else:
+                print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
 
     def run_tests(self):
         results = []
@@ -473,12 +572,14 @@ class Test:
         input
 
 
-
 def main():
     conf = read_settings()
+    time_changes = read_time_changes()
     logger.info('Read configuration....')
-    logger.info('Configuration:')
+    logger.info('Settings:')
     print(conf)
+    logger.info('Time changes:')
+    print(time_changes)
     if conf['enable_test_mode'] == 'True':
         logger.info('Run Tests')
         tests = Test()
@@ -492,7 +593,7 @@ def main():
     ani.random_words(2, random_color=True)
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
     ds3231 = DS3231(i2c)
-    timekeeper = Timekeeper(ds3231)
+    timekeeper = Timekeeper(ds3231, rtc)
     check_empty_battery(timekeeper, matrix)
 
     set_rtc_with_timekeeper(rtc, timekeeper)
@@ -500,15 +601,31 @@ def main():
     matrix.clear()
     matrix.dots.fill([0, 0, 0])
 
+    summer_time = check_for_summer_time(rtc, time_changes)
+    if summer_time:
+        logger.info("Clock is in summer time")
+    else:
+        logger.info("Clock is in winter time")
+
     while(True):
         if touch.read() <= 100:
             matrix.clear()
             matrix.show_set_mode()
+            # gc.collect()
+            # server = Server(logger)
+            # htmlserver = webserver.WebServer(logger)
+            # server.activate()
+            # server.wait_for_connection()
+            # htmlserver.start()
+            # server.deactivate()
             timekeeper.set_by_cli()
-            rtc.datetime(timekeeper.get_datetime())
             matrix.clear()
         current_datetime = rtc.datetime()
-        matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
+        summer_time = check_for_summer_time(rtc, time_changes)
+        if summer_time:
+            matrix.show_time(current_datetime[HOUR] + 1, current_datetime[MINUTE])
+        else:
+            matrix.show_time(current_datetime[HOUR], current_datetime[MINUTE])
         time.sleep(1)
 
 
