@@ -1,6 +1,7 @@
 import time
 from random import randint
 
+import gc
 from machine import Pin, SoftI2C, TouchPad
 from machine import Timer
 from machine import RTC
@@ -246,8 +247,9 @@ class RTCmock:
 
 
 class Timekeeper():
-    def __init__(self, ds3231):
+    def __init__(self, ds3231, rtc):
         self.ds3231 = ds3231
+        self.rtc = rtc
         
     def set_by_cli(self):
         print("You are in the clock settings. Do you want to change the time (y/n)?")
@@ -261,25 +263,21 @@ class Timekeeper():
                 hour = int(input("Enter Hour (24h format): "))
                 minute = int(input("Enter Minute: "))
                 second = int(input("Enter Second: ")) # Optional
-                print("Enter Weekday (0-6)")
-                print("0 - Sunday")
-                print("1 - Monday")
-                print("2 - Thuesday")
-                print("3 - Wednesday")
-                print("4 - Thursday")
-                print("5 - Friday")
-                print("6 - Saturday")
-                weekday = int(input())  # Optional
                 input("Press Enter to set the Time...")
 
-                datetime = (year, month, mday, hour, minute, second, weekday)
-                self.ds3231.datetime(datetime)
+                ds3231_datetime = (year, month, mday, hour, minute, second, 0)
+                self.ds3231.datetime(ds3231_datetime)
+                datetime = (year, month, mday, 0, hour, minute, second, 0)
+                self.rtc.datetime(datetime)
                 break
             elif user_input == "n":
                 print("no")
                 break
             else:
                 print("Wrong Input. Enter 'y' for yes ot 'n' for no.")
+
+    def set_datetime(self, datetime):
+        self.ds3231.datetime(datetime)
 
     def get_datetime(self):
         return self.ds3231.datetime()
@@ -595,7 +593,7 @@ def main():
     ani.random_words(2, random_color=True)
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
     ds3231 = DS3231(i2c)
-    timekeeper = Timekeeper(ds3231)
+    timekeeper = Timekeeper(ds3231, rtc)
     check_empty_battery(timekeeper, matrix)
 
     set_rtc_with_timekeeper(rtc, timekeeper)
@@ -613,12 +611,14 @@ def main():
         if touch.read() <= 100:
             matrix.clear()
             matrix.show_set_mode()
-            server = Server(logger)
-            htmlserver = webserver.WebServer(logger)
-            server.activate()
-            server.wait_for_connection()
-            htmlserver.start()
-            server.deactivate()
+            # gc.collect()
+            # server = Server(logger)
+            # htmlserver = webserver.WebServer(logger)
+            # server.activate()
+            # server.wait_for_connection()
+            # htmlserver.start()
+            # server.deactivate()
+            timekeeper.set_by_cli()
             matrix.clear()
         current_datetime = rtc.datetime()
         summer_time = check_for_summer_time(rtc, time_changes)

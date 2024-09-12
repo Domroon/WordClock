@@ -1,4 +1,5 @@
 from machine import RTC
+from main import Timekeeper
 
 from microdot import Microdot
 from microdot import send_file
@@ -53,8 +54,18 @@ def network(request):
     return send_file('/html/network.html')
 
 
-@app.get('/settings')
+@app.route('/settings', methods=['GET', 'POST'])
 def settings(request):
+    if request.method == 'POST':
+        rtc = RTC()
+        timekeeper = Timekeeper()
+        date = time = request.form.get('date').split('-')
+        time = request.form.get('time').split(':')
+        # [INFO]  Year | Month | Day | Weekday | Hour | Minute | Second | Microseconds
+        rtc.datetime((date[0], date[1], date[2], 0, time[0], time[1], 0, 0))
+        timekeeper.set_datetime((date[0], date[1], date[2], 0, time[0], time[1], 0, 0))
+        print("Set datetime to: ", (date[0], date[1], date[2], 0, time[0], time[1], 0, 0))
+        return send_file('html/success_time.html')
     return send_file('/html/settings.html')
 
 

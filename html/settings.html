@@ -15,35 +15,11 @@
         
         <div class="btn-wrapper">
             <h2>Uhrzeit</h2>
-            <form>
-                <fieldset>
-                  <div>
-                    <legend>Wie soll die Uhrzeit eingestellt werden?</legend>
-                    <input type="radio" id="automatic" name="time-setting" value="automatic"/>
-                    <label for="contactChoice1">Automatisch</label>
-              
-                    <input type="radio" id="manual" name="time-setting" value="manual" />
-                    <label for="contactChoice2">Manuell</label>
-                  </div>
-                  <div>
-                    <input class="btn active submit-btn" type="submit" value="Speichern" />
-                  </div>
-                </fieldset>
-                <div>
-                    <legend>Zeitzone wählen (nur wenn automatisch gewählt wurde)</legend>
-                    <input type="radio" id="automatic" name="time-setting" value="automatic"/>
-                    
-                    <input list="browsers">
-
-                    <datalist id="browsers">
-                        <option value="Internet Explorer">
-                        <option value="Firefox">
-                        <option value="Google Chrome">
-                        <option value="Opera">
-                        <option value="Safari">
-                    </datalist>
-                  </div>
-              </form>
+            <form action="/settings" method="post">
+                <input required type="date" name="date" />
+                <input required type="time" name="time" />
+                <input class="btn active submit-btn" type="submit" value="Speichern" />
+            </form>
         </div>
         <div class="btn-wrapper">
             <a style="margin-top: 3rem;" class="btn active" href="/">Hauptmenü</a>
