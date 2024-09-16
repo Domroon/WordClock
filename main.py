@@ -71,11 +71,12 @@ TOUCH_PAD = 27
 logger = Logger(logging.DEBUG)
 
 class Matrix:
-    def __init__(self, row_pins, word_color, dots_color):
+    def __init__(self, row_pins, word_color, dots_color, rainbow_words):
         self.rows = self._get_rows(row_pins)
         self.word_color = self._convert_color_string(word_color)
         self.dots_color = self._convert_color_string(dots_color)
         self.dots = NeoPixel(Pin(DOTS_PIN, Pin.OUT), 4)
+        self.rainbow = self._conver_boolean_string(rainbow_words)
 
     def _convert_color_string(self, color_string):
         color_string = color_string.replace("[", "")
@@ -85,6 +86,14 @@ class Matrix:
         for elem in color_str:
             color.append(int(elem))
         return color
+    
+    def _conver_boolean_string(self, boolean_string):
+        if boolean_string == 'False':
+            return False
+        elif boolean_string == 'True':
+            return True
+        else:
+            return None
 
     def _get_rows(self, row_pins):
         rows = []
@@ -101,13 +110,22 @@ class Matrix:
             row.fill([0, 0, 0])
             row.write()
 
-    def show_word(self, word, color):
-        for led in word:
-            self._set_led(led[1], led[0], color)
+    def show_word(self, word, color, rainbow=False):
+        if rainbow:
+            colors = [RED, GREEN, BLUE, YELLOW]
+            i = 0
+            for led in word:
+                if i == len(colors):
+                    i = 0
+                self._set_led(led[1], led[0], colors[i])
+                i = i + 1
+        else:
+            for led in word:
+                self._set_led(led[1], led[0], color)
 
     def show_words(self, word_list, color):
         for word in word_list:
-            self.show_word(word, color)
+            self.show_word(word, color, rainbow=self.rainbow)
 
     def clear_word(self, word):
         for led in word:
@@ -141,9 +159,9 @@ class Matrix:
 
         if minute < 5 and hour == 1:
             self.clear_word(NUMBERS[1])
-            self.show_word(NUMBERS[0], self.word_color)
+            self.show_word(NUMBERS[0], self.word_color, rainbow=self.rainbow)
         else:
-            self.show_word(NUMBERS[hour], self.word_color)
+            self.show_word(NUMBERS[hour], self.word_color, rainbow=self.rainbow)
 
     def _show_minute(self, minute):
         if minute % 5 == 0:
@@ -676,16 +694,16 @@ def main():
         tests.run_tests()
     
     touch = TouchPad(Pin(TOUCH_PAD))
-    matrix = Matrix(ROW_PINS, conf['text_color'], conf['dot_color'])
+    matrix = Matrix(ROW_PINS, conf['text_color'], conf['dot_color'], conf['rainbow_words'])
     matrix._convert_color_string(conf['text_color'])
     rtc = RTC()        
     ani = Animation(matrix)
     matrix.clear()
 
-    ani.random_dots(5, single_dot=True, random_color=True)
+    # ani.random_dots(5, single_dot=True, random_color=True)
     # ani.random_words(2, random_color=True)
-    ani.fill_dot_by_dot(10, from_top=True)
-    ani.fill_dot_by_dot(10, color=[0, 50, 0])
+    # ani.fill_dot_by_dot(10, from_top=True)
+    # ani.fill_dot_by_dot(10, color=[0, 50, 0])
     # ani.falling_bars(color=[50, 0, 0],single_bars=True, from_top=True)
     # ani.falling_bars(color=[50, 0, 0],single_bars=True, from_top=True, reverse=True)
     # ani.falling_bars(color=[0, 50, 0],single_bars=True)
