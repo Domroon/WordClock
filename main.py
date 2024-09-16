@@ -18,7 +18,7 @@ WHITE = [150, 150, 150]
 RED = [150, 0, 0]
 GREEN = [0, 150, 0]
 BLUE = [0, 0, 150]
-YELLOW = [255, 255, 0]
+YELLOW = [150, 150, 0]
 
 # Static Variables for RTC
 YEAR = 0
@@ -353,6 +353,87 @@ class Animation:
             self.matrix.clear_word(self.words[rand_num])
             loops = loops + 1
 
+    def fill_dot_by_dot(self, duration, on_dura=0.02, color=[0, 0, 50], from_top=False):
+        duration = duration / on_dura
+        loops = 0
+        x = 0
+        y = 0
+        if from_top:
+            while True:
+                if loops == duration or y == 11:
+                    break
+                self.matrix._set_led(x, y, color)
+                time.sleep(on_dura)
+                x = x + 1
+                if x == 10:
+                    x = 0
+                    y = y + 1
+        else:
+            while True:
+                if loops == duration or y == 10:
+                    break
+                self.matrix._set_led(y, x, color)
+                time.sleep(on_dura)
+                x = x + 1
+                if x == 11:
+                    x = 0
+                    y = y + 1
+
+    def falling_bars(self, on_dura=0.1, color=[50, 50, 50], from_top=False, single_bars=False, reverse=False):
+        if reverse:
+            if from_top:
+                for y in range(9, 0, -1):
+                    for x in range(10, -1, -1):
+                        self.matrix._set_led(y, x, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(10, -1, -1):
+                            self.matrix._set_led(y, x, [0, 0, 0])
+            else:
+                for y in range(10, 0, -1):
+                    for x in range(9, -1, -1):
+                        self.matrix._set_led(x, y, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(9, -1, -1):
+                            self.matrix._set_led(x, y, [0, 0, 0])
+        else:
+            if from_top:
+                for y in range(10):
+                    for x in range(11):
+                        self.matrix._set_led(y, x, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(11):
+                            self.matrix._set_led(y, x, [0, 0, 0])
+            else:
+                for y in range(11):
+                    for x in range(10):
+                        self.matrix._set_led(x, y, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(10):
+                            self.matrix._set_led(x, y, [0, 0, 0])
+
+    def random_dots(self, duration, on_dura=0.05, color=[50, 50, 50], random_color=False, single_dot=False):
+        duration = duration / on_dura
+        loops = 0
+        colors = [WHITE, RED, GREEN, BLUE]
+        while True:
+            if loops == duration:
+                    break
+            if random_color:
+                rand_num = randint(0, len(colors)-1)
+                color = colors[rand_num]
+
+            rand_x = randint(0, 10)
+            rand_y = randint(0, 9)
+            self.matrix._set_led(rand_y, rand_x, color)
+            time.sleep(on_dura)
+            if single_dot:
+                self.matrix._set_led(rand_y, rand_x, [0, 0, 0])
+            loops = loops + 1
+
 
 def set_rtc(rtc, timeinfo_json):
     logger.info("Set RTC:")
@@ -600,7 +681,18 @@ def main():
     rtc = RTC()        
     ani = Animation(matrix)
     matrix.clear()
-    ani.random_words(2, random_color=True)
+
+    ani.random_dots(5, single_dot=True, random_color=True)
+    # ani.random_words(2, random_color=True)
+    ani.fill_dot_by_dot(10, from_top=True)
+    ani.fill_dot_by_dot(10, color=[0, 50, 0])
+    # ani.falling_bars(color=[50, 0, 0],single_bars=True, from_top=True)
+    # ani.falling_bars(color=[50, 0, 0],single_bars=True, from_top=True, reverse=True)
+    # ani.falling_bars(color=[0, 50, 0],single_bars=True)
+    # ani.falling_bars(color=[0, 50, 0],single_bars=True, reverse=True)
+    # ani.falling_bars(color=[0, 0, 50])
+    # ani.falling_bars(color=[0, 0, 0])
+
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
     ds3231 = DS3231(i2c)
     timekeeper = Timekeeper(ds3231, rtc)
