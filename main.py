@@ -18,7 +18,7 @@ WHITE = [150, 150, 150]
 RED = [150, 0, 0]
 GREEN = [0, 150, 0]
 BLUE = [0, 0, 150]
-YELLOW = [255, 255, 0]
+YELLOW = [150, 150, 0]
 
 # Static Variables for RTC
 YEAR = 0
@@ -71,11 +71,29 @@ TOUCH_PAD = 27
 logger = Logger(logging.DEBUG)
 
 class Matrix:
-    def __init__(self, row_pins, word_color, dots_color):
+    def __init__(self, row_pins, word_color, dots_color, rainbow_words):
         self.rows = self._get_rows(row_pins)
-        self.word_color = word_color
-        self.dots_color = dots_color
+        self.word_color = self._convert_color_string(word_color)
+        self.dots_color = self._convert_color_string(dots_color)
         self.dots = NeoPixel(Pin(DOTS_PIN, Pin.OUT), 4)
+        self.rainbow = self._conver_boolean_string(rainbow_words)
+
+    def _convert_color_string(self, color_string):
+        color_string = color_string.replace("[", "")
+        color_string = color_string.replace("]", "")
+        color_str = color_string.split(',')
+        color = []
+        for elem in color_str:
+            color.append(int(elem))
+        return color
+    
+    def _conver_boolean_string(self, boolean_string):
+        if boolean_string == 'False':
+            return False
+        elif boolean_string == 'True':
+            return True
+        else:
+            return None
 
     def _get_rows(self, row_pins):
         rows = []
@@ -92,13 +110,22 @@ class Matrix:
             row.fill([0, 0, 0])
             row.write()
 
-    def show_word(self, word, color):
-        for led in word:
-            self._set_led(led[1], led[0], color)
+    def show_word(self, word, color, rainbow=False):
+        if rainbow:
+            colors = [RED, GREEN, BLUE, YELLOW]
+            i = 0
+            for led in word:
+                if i == len(colors):
+                    i = 0
+                self._set_led(led[1], led[0], colors[i])
+                i = i + 1
+        else:
+            for led in word:
+                self._set_led(led[1], led[0], color)
 
     def show_words(self, word_list, color):
         for word in word_list:
-            self.show_word(word, color)
+            self.show_word(word, color, rainbow=self.rainbow)
 
     def clear_word(self, word):
         for led in word:
@@ -132,9 +159,9 @@ class Matrix:
 
         if minute < 5 and hour == 1:
             self.clear_word(NUMBERS[1])
-            self.show_word(NUMBERS[0], self.word_color)
+            self.show_word(NUMBERS[0], self.word_color, rainbow=self.rainbow)
         else:
-            self.show_word(NUMBERS[hour], self.word_color)
+            self.show_word(NUMBERS[hour], self.word_color, rainbow=self.rainbow)
 
     def _show_minute(self, minute):
         if minute % 5 == 0:
@@ -342,6 +369,87 @@ class Animation:
             self.matrix.show_word(self.words[rand_num], color)
             time.sleep(on_dura)
             self.matrix.clear_word(self.words[rand_num])
+            loops = loops + 1
+
+    def fill_dot_by_dot(self, duration, on_dura=0.02, color=[0, 0, 50], from_top=False):
+        duration = duration / on_dura
+        loops = 0
+        x = 0
+        y = 0
+        if from_top:
+            while True:
+                if loops == duration or y == 11:
+                    break
+                self.matrix._set_led(x, y, color)
+                time.sleep(on_dura)
+                x = x + 1
+                if x == 10:
+                    x = 0
+                    y = y + 1
+        else:
+            while True:
+                if loops == duration or y == 10:
+                    break
+                self.matrix._set_led(y, x, color)
+                time.sleep(on_dura)
+                x = x + 1
+                if x == 11:
+                    x = 0
+                    y = y + 1
+
+    def falling_bars(self, on_dura=0.1, color=[50, 50, 50], from_top=False, single_bars=False, reverse=False):
+        if reverse:
+            if from_top:
+                for y in range(9, 0, -1):
+                    for x in range(10, -1, -1):
+                        self.matrix._set_led(y, x, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(10, -1, -1):
+                            self.matrix._set_led(y, x, [0, 0, 0])
+            else:
+                for y in range(10, 0, -1):
+                    for x in range(9, -1, -1):
+                        self.matrix._set_led(x, y, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(9, -1, -1):
+                            self.matrix._set_led(x, y, [0, 0, 0])
+        else:
+            if from_top:
+                for y in range(10):
+                    for x in range(11):
+                        self.matrix._set_led(y, x, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(11):
+                            self.matrix._set_led(y, x, [0, 0, 0])
+            else:
+                for y in range(11):
+                    for x in range(10):
+                        self.matrix._set_led(x, y, color)
+                    time.sleep(on_dura)
+                    if single_bars:
+                        for x in range(10):
+                            self.matrix._set_led(x, y, [0, 0, 0])
+
+    def random_dots(self, duration, on_dura=0.05, color=[50, 50, 50], random_color=False, single_dot=False):
+        duration = duration / on_dura
+        loops = 0
+        colors = [WHITE, RED, GREEN, BLUE]
+        while True:
+            if loops == duration:
+                    break
+            if random_color:
+                rand_num = randint(0, len(colors)-1)
+                color = colors[rand_num]
+
+            rand_x = randint(0, 10)
+            rand_y = randint(0, 9)
+            self.matrix._set_led(rand_y, rand_x, color)
+            time.sleep(on_dura)
+            if single_dot:
+                self.matrix._set_led(rand_y, rand_x, [0, 0, 0])
             loops = loops + 1
 
 
@@ -584,13 +692,25 @@ def main():
         logger.info('Run Tests')
         tests = Test()
         tests.run_tests()
-
+    
     touch = TouchPad(Pin(TOUCH_PAD))
-    matrix = Matrix(ROW_PINS, WHITE, WHITE)
+    matrix = Matrix(ROW_PINS, conf['text_color'], conf['dot_color'], conf['rainbow_words'])
+    matrix._convert_color_string(conf['text_color'])
     rtc = RTC()        
     ani = Animation(matrix)
     matrix.clear()
+
+    # ani.random_dots(5, single_dot=True, random_color=True)
     ani.random_words(2, random_color=True)
+    # ani.fill_dot_by_dot(10, from_top=True)
+    # ani.fill_dot_by_dot(10, color=[0, 50, 0])
+    # ani.falling_bars(color=[50, 0, 0],single_bars=True, from_top=True)
+    # ani.falling_bars(color=[50, 0, 0],single_bars=True, from_top=True, reverse=True)
+    # ani.falling_bars(color=[0, 50, 0],single_bars=True)
+    # ani.falling_bars(color=[0, 50, 0],single_bars=True, reverse=True)
+    # ani.falling_bars(color=[0, 0, 50])
+    # ani.falling_bars(color=[0, 0, 0])
+
     i2c = SoftI2C(sda=Pin(32), scl=Pin(33))
     ds3231 = DS3231(i2c)
     timekeeper = Timekeeper(ds3231, rtc)
@@ -611,16 +731,15 @@ def main():
         if touch.read() <= 100:
             matrix.clear()
             matrix.show_set_mode()
-            # gc.collect()
-            # server = Server(logger)
-            # htmlserver = webserver.WebServer(logger)
-            # server.activate()
-            # server.wait_for_connection()
-            # htmlserver.start()
-            # server.deactivate()
             timekeeper.set_by_cli()
             matrix.clear()
         current_datetime = rtc.datetime()
+
+        # show animations and clear matrix
+        if current_datetime[5] % 5 == 0 and conf['five_minutes_animation'] == 'True' and current_datetime[6] == 0:
+            ani.random_dots(4, random_color=True)
+            matrix.clear()
+
         summer_time = check_for_summer_time(rtc, time_changes)
         if summer_time:
             matrix.show_time(current_datetime[HOUR] + 1, current_datetime[MINUTE])
