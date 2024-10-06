@@ -701,7 +701,7 @@ def main():
     matrix.clear()
 
     # ani.random_dots(5, single_dot=True, random_color=True)
-    # ani.random_words(2, random_color=True)
+    ani.random_words(2, random_color=True)
     # ani.fill_dot_by_dot(10, from_top=True)
     # ani.fill_dot_by_dot(10, color=[0, 50, 0])
     # ani.falling_bars(color=[50, 0, 0],single_bars=True, from_top=True)
@@ -731,16 +731,15 @@ def main():
         if touch.read() <= 100:
             matrix.clear()
             matrix.show_set_mode()
-            # gc.collect()
-            # server = Server(logger)
-            # htmlserver = webserver.WebServer(logger)
-            # server.activate()
-            # server.wait_for_connection()
-            # htmlserver.start()
-            # server.deactivate()
             timekeeper.set_by_cli()
             matrix.clear()
         current_datetime = rtc.datetime()
+
+        # show animations and clear matrix
+        if current_datetime[5] % 5 == 0 and conf['five_minutes_animation'] == 'True' and current_datetime[6] == 0:
+            ani.random_dots(4, random_color=True)
+            matrix.clear()
+
         summer_time = check_for_summer_time(rtc, time_changes)
         if summer_time:
             matrix.show_time(current_datetime[HOUR] + 1, current_datetime[MINUTE])
