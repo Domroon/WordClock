@@ -6,8 +6,7 @@ from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
 
-from networking import Client
-from networking import download_json_file, LINK
+from networking import Client, Server
 import logging
 from logging import Logger
 from ds3231 import DS3231
@@ -271,10 +270,20 @@ def main():
 
     set_rtc_with_timekeer(rtc, timekeeper)
 
-    # client = Client(logger)
-    # client.activate()
-    # client.search_wlan()
-    # client.connect()
+    client = Client(logger)
+    server = Server(logger)
+    client.activate()
+    client.search_wlan()
+    for available_network in client.available_networks:
+        for stored_network in client.stored_networks:
+            if stored_network['ssid'] == available_network:
+                client.connect()
+    if client.wlan.isconnected() == False:
+        logger.info("No stored networks found. Activate Server for Wlan-Settings for 10s")
+        client.deactivate()
+        server.activate()
+        server.wait_t_for_connection(10)
+
     # timeinfo_json = download_json_file(LINK['datetime'])
     # set_rtc(rtc, timeinfo_json)
     

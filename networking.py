@@ -138,6 +138,24 @@ class Server:
             time.sleep(1)
             self.log.info('Connected')
 
+    def wait_t_for_connection(self, time_in_s):
+        if not self.ap.isconnected():
+            current_time = 0
+            self.log.info('Waiting for connection...')
+            while not self.ap.isconnected():
+                if current_time == time_in_s:
+                    self.log.info('Waiting for connection takes too much time. Cancel waiting.')
+                    break
+                current_time = current_time + 1
+                time.sleep(1)
+
+            time.sleep(1)
+            if self.ap.isconnected():
+                self.log.info('Connected')
+        else:
+            time.sleep(1)
+            self.log.info('Connected')
+
     def deactivate(self):
         self.ip = None
         self.subnet = None
