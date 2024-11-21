@@ -5,8 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ESP Clock</title>
-    <link rel="stylesheet" href="/static/style.css" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="/html/style.css" />
   </head>
   <body>
     <section class="home">
@@ -15,7 +14,7 @@
         
         <div class="btn-wrapper">
             
-          <form action="/time" method="post">
+          <form action="/success" method="post">
 
             <h2>Network 1</h2>
             <label for="ssid1">SSID</label>
@@ -36,8 +35,8 @@
             <input required type="password" name="password3" /> -->
 
             <input class="btn active submit-btn" type="submit" value="Submit" />
-
           </form>
+          <a class="btn active" href="/shutdown">Clock mode</a>
         </div>
       </div>
     </section>

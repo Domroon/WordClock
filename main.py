@@ -6,10 +6,12 @@ from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
 
-from networking import Client, Server
+from networking import Client, Server, download_json_file, LINK
 import logging
 from logging import Logger
 from ds3231 import DS3231
+from webserver import WebServer
+from memory import Memory
 
 # COLORS
 WHITE = [150, 150, 150]
@@ -283,11 +285,27 @@ def main():
         client.deactivate()
         server.activate()
         server.wait_t_for_connection(10)
-
-    # timeinfo_json = download_json_file(LINK['datetime'])
-    # set_rtc(rtc, timeinfo_json)
+        if server.ap.isconnected():
+            memory = Memory(logger)
+            md_webserver = WebServer(logger, memory)
+            md_webserver.start()
+        server.deactivate()
     
+    client.activate()
+    client.search_wlan()
+    for available_network in client.available_networks:
+        for stored_network in client.stored_networks:
+            if stored_network['ssid'] == available_network:
+                client.connect()
 
+    if client.wlan.isconnected():
+        timeinfo_json = download_json_file(LINK['datetime'])
+        set_rtc(rtc, timeinfo_json)
+    else:
+        client.deactivate()
+        logger.info("No stored networks found. Deactivate Client.")
+
+    
     matrix.clear()
 
     while(True):
