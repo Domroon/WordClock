@@ -273,7 +273,7 @@ def main():
     set_rtc_with_timekeeper(rtc, timekeeper)
 
     client = Client(logger)
-    server = Server(logger)
+    server = Server(logger, 'WordClock')
     client.activate()
     client.search_wlan()
     for available_network in client.available_networks:

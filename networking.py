@@ -95,11 +95,11 @@ class Client:
         
 
 class Server:
-    def __init__(self, logger, micropython_optimize=False):
+    def __init__(self, logger, ssid, micropython_optimize=False):
         self.ap = network.WLAN(network.AP_IF)
         self.log = logger
         self.optimize = micropython_optimize
-        self.ssid = 'ESP-Clock-AP'
+        self.ssid = ssid
         self.ip = None
         self.subnet = None
         self.gateway = None
