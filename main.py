@@ -6,7 +6,7 @@ from machine import Timer
 from machine import RTC
 from neopixel import NeoPixel
 
-from networking import Client, Server, download_json_file, LINK
+from networking import Client, Server, download_json_file, LINK, ConnectionError
 import logging
 from logging import Logger
 from ds3231 import DS3231
@@ -279,33 +279,41 @@ def main():
     for available_network in client.available_networks:
         for stored_network in client.stored_networks:
             if stored_network['ssid'] == available_network:
-                client.connect()
+                try:
+                    client.connect()
+                except ConnectionError:
+                    logger.info("Ignore Connection Error")
     if client.wlan.isconnected() == False:
-        logger.info("No stored networks found. Activate Server for Wlan-Settings for 10s")
+        logger.info("No stored networks found. Activate Server for Wlan-Settings for 30s")
         client.deactivate()
         server.activate()
-        server.wait_t_for_connection(10)
+        server.wait_t_for_connection(30)
         if server.ap.isconnected():
             memory = Memory(logger)
             md_webserver = WebServer(logger, memory)
             md_webserver.start()
         server.deactivate()
+        client.stored_networks = []
+        client._read_stored_networks()
     
     client.activate()
     client.search_wlan()
     for available_network in client.available_networks:
         for stored_network in client.stored_networks:
             if stored_network['ssid'] == available_network:
-                client.connect()
+                try:
+                    client.connect()
+                except ConnectionError:
+                    logger.info("Ignore Connection Error")
+
 
     if client.wlan.isconnected():
         timeinfo_json = download_json_file(LINK['datetime'])
         set_rtc(rtc, timeinfo_json)
     else:
-        client.deactivate()
         logger.info("No stored networks found. Deactivate Client.")
 
-    
+    client.deactivate()
     matrix.clear()
 
     while(True):

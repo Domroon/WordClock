@@ -80,6 +80,7 @@ class Client:
                     log_str = "Connected to " + network['ssid']
                     self.log.info(log_str)
                 else:
+                    self.log.error("Can not connect to: ", self.stored_networks)
                     raise ConnectionError("No connection after connect call")
         
         if not self.wlan.isconnected():
