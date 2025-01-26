@@ -73,6 +73,31 @@ class Matrix:
         self.rows[x][y] = color
         self.rows[x].write()
 
+    def show_word(self, word, color, rainbow=False):
+        if rainbow:
+            colors = [RED, GREEN, BLUE, YELLOW]
+            i = 0
+            for led in word:
+                if i == len(colors):
+                    i = 0
+                self.set_led(led[1], led[0], colors[i])
+                i = i + 1
+        else:
+            for led in word:
+                self.set_led(led[1], led[0], color)
+
+    def show_words(self, word_list, color, rainbow=False):
+        for word in word_list:
+            self.show_word(word, color, rainbow=rainbow)
+
+    def clear_word(self, word):
+        for led in word:
+            self.set_led(led[1], led[0], color=[0, 0, 0])
+
+    def clear_words(self, word_list):
+        for word in word_list:
+            self.show_word(word, color=[0, 0, 0])
+
     def clear(self):
         for row in self.rows:
             row.fill([0, 0, 0])
@@ -86,31 +111,6 @@ class TimeScreen:
         self.dots_color: list[int] = WHITE
         self.rainbow: bool = False
 
-    def _show_word(self, word, color, rainbow=False):
-        if rainbow:
-            colors = [RED, GREEN, BLUE, YELLOW]
-            i = 0
-            for led in word:
-                if i == len(colors):
-                    i = 0
-                self.matrix.set_led(led[1], led[0], colors[i])
-                i = i + 1
-        else:
-            for led in word:
-                self.matrix.set_led(led[1], led[0], color)
-
-    def _show_words(self, word_list, color):
-        for word in word_list:
-            self._show_word(word, color, rainbow=self.rainbow)
-
-    def _clear_word(self, word):
-        for led in word:
-            self.matrix.set_led(led[1], led[0], color=[0, 0, 0])
-
-    def __clear_words(self, word_list):
-        for word in word_list:
-            self._show_word(word, color=[0, 0, 0])
-
     def _show_hour(self, hour, minute):
         if(hour > 12):
             hour = hour - 12
@@ -118,15 +118,15 @@ class TimeScreen:
             hour = 12
 
         if hour == 1:
-            self._clear_word(NUMBERS[12])
+            self.matrix.clear_word(NUMBERS[12])
         else:
-            self._clear_word(NUMBERS[hour-1])
+            self.matrix.clear_word(NUMBERS[hour-1])
 
         if minute < 5 and hour == 1:
-            self._clear_word(NUMBERS[1])
-            self._show_word(NUMBERS[0], self.word_color, rainbow=self.rainbow)
+            self.matrix.clear_word(NUMBERS[1])
+            self.matrix.show_word(NUMBERS[0], self.word_color, rainbow=self.rainbow)
         else:
-            self._show_word(NUMBERS[hour], self.word_color, rainbow=self.rainbow)
+            self.matrix.show_word(NUMBERS[hour], self.word_color, rainbow=self.rainbow)
 
     def _show_minute(self, minute):
         if minute % 5 == 0:
@@ -148,45 +148,45 @@ class TimeScreen:
         self.matrix.dots.write()
 
         if minute < 5:
-            self.__clear_words([FÜNF_2, VOR])
-            self._show_word(UHR, self.word_color)
+            self.matrix.clear_words([FÜNF_2, VOR])
+            self.matrix.show_word(UHR, self.word_color)
         elif minute >= 5 and minute < 10:
-            self._clear_word(UHR)
-            self._show_words([FÜNF_2, NACH], self.word_color)
+            self.matrix.clear_word(UHR)
+            self.matrix.show_words([FÜNF_2, NACH], self.word_color)
         elif minute >= 10 and minute < 15:
-            self._clear_word(FÜNF_2)
-            self._show_words([ZEHN_2, NACH], self.word_color)
+            self.matrix.clear_word(FÜNF_2)
+            self.matrix.show_words([ZEHN_2, NACH], self.word_color)
         elif minute >= 15 and minute < 20:
-            self._clear_word(ZEHN_2)
-            self._show_words([VIERTEL, NACH], self.word_color)
+            self.matrix.clear_word(ZEHN_2)
+            self.matrix.show_words([VIERTEL, NACH], self.word_color)
         elif minute >= 20 and minute < 25:
-            self._clear_word(VIERTEL)
-            self._show_words([ZWANZIG, NACH], self.word_color)
+            self.matrix.clear_word(VIERTEL)
+            self.matrix.show_words([ZWANZIG, NACH], self.word_color)
         elif minute >= 25 and minute < 30:
-            self.__clear_words([ZWANZIG, NACH])
-            self._show_words([FÜNF_2, VOR, HALB], self.word_color)
+            self.matrix.clear_words([ZWANZIG, NACH])
+            self.matrix.show_words([FÜNF_2, VOR, HALB], self.word_color)
         elif minute >= 30 and minute < 35:
-            self.__clear_words([FÜNF_2, VOR])
-            self._show_word(HALB, self.word_color)
+            self.matrix.clear_words([FÜNF_2, VOR])
+            self.matrix.show_word(HALB, self.word_color)
         elif minute >= 35 and minute < 40:
-            self._show_words([FÜNF_2, NACH, HALB], self.word_color)
+            self.matrix.show_words([FÜNF_2, NACH, HALB], self.word_color)
         elif minute >= 40 and minute < 45:
-            self.__clear_words([FÜNF_2, NACH, HALB])
-            self._show_words([ZWANZIG, VOR], self.word_color)
+            self.matrix.clear_words([FÜNF_2, NACH, HALB])
+            self.matrix.show_words([ZWANZIG, VOR], self.word_color)
         elif minute >= 45 and minute < 50:
-            self.__clear_words([ZWANZIG, HALB])
-            self._show_words([VIERTEL, VOR], self.word_color)
+            self.matrix.clear_words([ZWANZIG, HALB])
+            self.matrix.show_words([VIERTEL, VOR], self.word_color)
         elif minute >= 50 and minute < 55:
-            self._clear_word(VIERTEL)
-            self._show_words([ZEHN_2, VOR], self.word_color)
+            self.matrix.clear_word(VIERTEL)
+            self.matrix.show_words([ZEHN_2, VOR], self.word_color)
         elif minute >= 55 and minute != 0:
-            self._clear_word(ZEHN_2)
-            self._show_words([FÜNF_2, VOR], self.word_color)
+            self.matrix.clear_word(ZEHN_2)
+            self.matrix.show_words([FÜNF_2, VOR], self.word_color)
         
     def show_time(self, hour, minute):
         if minute >= 25:
             hour = hour + 1
-        self._show_words([ES, IST], self.word_color)
+        self.matrix.show_words([ES, IST], self.word_color)
         self._show_hour(hour, minute)
         self._show_minute(minute)
 
