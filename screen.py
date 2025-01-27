@@ -211,3 +211,36 @@ class UserInfoScreen:
 
     def clear(self):
         self.matrix.clear()
+
+
+class AnimationScreen:
+    def __init__(self, matrix):
+        self.matrix: Matrix = matrix
+
+
+    def show_wait_line(self, frame, color):
+        if frame == 0:
+            self.matrix.clear()
+
+        if frame < 7:
+            self.matrix.set_led(2, 1 + frame+1, color)
+            self.matrix.set_led(2, 1 + frame-1, [0, 0, 0])
+        
+
+    def show_wait_circle(self, frame, color):
+        if frame == 0:
+            self.matrix.clear()
+
+        if frame < 7:
+            self.matrix.set_led(2, 1 + frame+1, color)
+            self.matrix.set_led(2, 1 + frame-1, [0, 0, 0])
+        
+        if frame >= 7:
+            # frame 7
+            self.matrix.set_led(frame - 4, 8, color)
+            self.matrix.set_led(2, 1 + frame-1, [0, 0, 0])
+        
+        if frame >= 8:
+            # frame 8 
+            self.matrix.set_led(frame - 4, 8, color)
+            self.matrix.set_led(frame - 5, 8, [0, 0, 0])
