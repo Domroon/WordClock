@@ -244,3 +244,19 @@ class AnimationScreen:
             # frame 8 
             self.matrix.set_led(frame - 4, 8, color)
             self.matrix.set_led(frame - 5, 8, [0, 0, 0])
+
+    def show_success_animation(self, frame):
+        if frame == 0:
+            self.matrix.clear()
+        for x in range(frame):
+            self.matrix.set_led(x, frame, GREEN)
+        for x in range(frame-1):
+            self.matrix.set_led(x, frame, [0,0,0])
+
+    def show_fail_animation(self, frame):
+        if frame == 0:
+            self.matrix.clear()
+        for x in range(frame):
+            self.matrix.set_led(x, frame, RED)
+        for x in range(frame-1):
+            self.matrix.set_led(x, frame, [0,0,0])
