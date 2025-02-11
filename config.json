@@ -1,0 +1,5 @@
+{
+  "ssid": "test",
+  "pw": "secure-password",
+  "colors": ["black", "white", "red", "blue"],
+}
