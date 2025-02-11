@@ -260,3 +260,11 @@ class AnimationScreen:
             self.matrix.set_led(x, frame, RED)
         for x in range(frame-1):
             self.matrix.set_led(x, frame, [0,0,0])
+
+    def show_network_connected_dot(self):
+        self.matrix.clear()
+        self.matrix.set_led(0, 0, [0, 255, 0])
+
+    def show_network_not_connected_dot(self):
+        self.matrix.clear()
+        self.matrix.set_led(0, 0, [255, 0, 0])

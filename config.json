@@ -1,5 +1,6 @@
 {
-  "ssid": "test",
-  "pw": "secure-password",
-  "colors": ["black", "white", "red", "blue"],
+  "device_name": "WordClock",
+  "ssid": "YourSSID",
+  "ssid_key": "YourSecretSSIDKey",
+  "colors": ["black", "white", "red", "blue"]
 }

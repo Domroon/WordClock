@@ -7,7 +7,6 @@ from screen import TimeScreen, Matrix, AnimationScreen, BLUE
 wlan_connected = Event()
 wlan_connected_timeout = Event()
 
-
 # general coroutines and functions
 
 async def print_alive():
@@ -73,13 +72,6 @@ async def show_fail_animation(animation_screen):
             frame = frame + 1
         await sleep(0.1)
 
-async def show_network_connection_status(animation_screen):
-    while True:
-        if wlan_connected.is_set():
-            animation_screen.show_network_connected_dot()
-        if wlan_connected_timeout.is_set():
-            animation_screen.show_network_not_connected_dot()
-        await sleep(0.1)
 
 # network coroutines
 
@@ -140,9 +132,8 @@ async def main():
 
     # create_task(network_found_test(matrix))
     create_task(show_wait_animation(animation_screen))
-    # create_task(show_sucess_animation(animation_screen))
-    # create_task(show_fail_animation(animation_screen))
-    create_task(show_network_connection_status(animation_screen))
+    create_task(show_sucess_animation(animation_screen))
+    create_task(show_fail_animation(animation_screen))
     # create_task(show_time(matrix))
 
     event_loop = get_event_loop()

@@ -1,5 +1,8 @@
+import network
 from asyncio import Event
-import json
+
+from config import config
+
 
 booted = Event()            # 0 - hier kann unterschieden werden ob das System schon an war oder neu gebootet ist
 connectToWlan = Event()     # 1 - Wird gesetzt wenn gerade versucht wird eine Internetverbindung aufzubauen
@@ -8,44 +11,30 @@ deliverWebServer = Event()  # 3 - Der Webserver zum eingeben von SSID und Passwo
 updateFirmware = Event()    # 4 - Die Firmware wird gerade aktualisiert
 waitToCheck = Event()       # 5 - Es wird gerade gewartet um später nach Updates zu suchen
 
-
-SSID = 'AlphaCentauri'
-SSID_KEY = 'vhuj7240'
+wlan_connected = Event()
+wlan_connected_timeout = Event()
 
 
 def connect_to_wlan(wlan):
     wlan.active(True)
-    wlan.config(hostname='WordClock') # read from config
+    wlan.config(hostname=config['device_name'])
     if not wlan.isconnected():
-        print('Connecting to network ', SSID, '...') # read ssid from config
+        print('Connecting to network ', config['ssid'], '...')
         try:
-            wlan.connect(SSID, SSID_KEY) # read ssid and key from config
+            wlan.connect(config['ssid'], config['ssid_key'])
         except OSError:
             wlan.active(False)
             wlan.active(True)
-            wlan.connect(SSID, SSID_KEY) # read ssid and key from config
+            wlan.connect(config['ssid'], config['ssid_key'])
 
 
-def get_config():
-    f = open('config.json', 'r')
-    return json.loads(f.read())
-
-
-def change_config(key, value):
-    config = get_config()
-    config[key] = value
-    f = open('config.json', 'r')
-    f.write(json.dumps(config))
-    f.close()
-
-
-class BootStateMachine:
+class UpdateStateMachine:
     def __init__(self):
         pass
     
     async def boot_device(self):
         # state 0
-        pass
+        booted.set()
 
     async def connect_to_wlan(self):
         # state 1
@@ -70,10 +59,9 @@ class BootStateMachine:
 
 def main():
     print("Start System")
-    change_config("test", "123")
-    config = get_config()
-    print(config['test'])
-
+    wlan = network.WLAN(network.WLAN.IF_STA)
+    connect_to_wlan(wlan)
+    
 
 if __name__ == '__main__':
     main()
