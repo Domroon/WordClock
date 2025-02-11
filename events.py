@@ -6,22 +6,22 @@ from asyncio import Event
 wlan_connected = Event()
 wlan_connected_timeout = Event()
 
-# Update StateMachine Events
+# Update StateMachine Events - es kann immer nur ein StateMachine Event aktiv sein, nie mehrere gleichzeitig
 
 booted = Event()                # 0 - hier kann unterschieden werden ob das System schon an war oder neu gebootet ist
-checkTimekeeperState = Event()  # 0.1 Hier wird geprüft ob der Timekeeper eine valide Uhrzeit liefert
-connectToWlan = Event()         # 1 - Wird gesetzt wenn gerade versucht wird eine Internetverbindung aufzubauen
-checkForUpdates = Event()       # 2 - Es wird gerade nach Updates gesucht
-deliverWebServer = Event()      # 3 - Der Webserver zum eingeben von SSID und Password fürs Wlan ist gerade aktiv
-updateFirmware = Event()        # 4 - Die Firmware wird gerade aktualisiert
-waitToCheck = Event()           # 5 - Es wird gerade gewartet um später nach Updates zu suchen
+checkTimekeeperState = Event()  # 1 - Hier wird geprüft ob der Timekeeper eine valide Uhrzeit liefert
+connectToWlan = Event()         # 2 - Wird gesetzt wenn gerade versucht wird eine Internetverbindung aufzubauen
+checkForUpdates = Event()       # 3 - Es wird gerade nach Updates gesucht
+deliverWebServer = Event()      # 4 - Der Webserver zum eingeben von SSID und Password fürs Wlan ist gerade aktiv
+updateFirmware = Event()        # 5 - Die Firmware wird gerade aktualisiert
+waitToCheck = Event()           # 6 - Es wird gerade gewartet um später nach Updates zu suchen
 
 # Time Validation Events
 
 time_set_by_internet = Event()
 timekeeper_time_is_valid = Event()
 
-# Screen Events - es kann immer nur ein Screen Event aktiv sein, nicht mehrere gleichzeitig
+# Screen Events - es kann immer nur ein Screen Event aktiv sein, nie mehrere gleichzeitig
 
 showStartInfo = Event()         # Sollte einmal nach dem Start aktiv sein um zu zeigen ob der Timekeeper eine valide Zeit hat,
                                 # ob Wlan verbunden ist und ob auf Updates geprüft werden konnte

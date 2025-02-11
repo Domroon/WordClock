@@ -6,6 +6,46 @@ from config import config
 from screen import TimeScreen, Matrix, AnimationScreen, BLUE
 import events
 
+
+class UpdateStateMachine:
+    def __init__(self):
+        self.state = 0
+    
+    async def boot_device(self):
+        # state 0
+        pass
+
+    async def check_timekeeper_state(self):
+        # state 1
+        pass
+
+    async def connect_to_wlan(self):
+        # state 2
+        pass
+
+    async def check_for_updates(self):
+        # state 3
+        pass
+
+    async def deliver_webserver(self):
+        # state 4
+        pass
+
+    async def update_firmware(self):
+        # state 5
+        pass
+
+    async def wait_to_check_updates(self):
+        # state 6
+        pass
+
+    async def set_current_event(self):
+        pass
+
+    async def start(self):
+        while True:
+            pass
+
 # general coroutines and functions
 
 async def print_alive():
