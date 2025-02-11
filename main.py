@@ -1,13 +1,10 @@
 from machine import RTC
 import network
-from asyncio import sleep, create_task, run, get_event_loop, Event
+from asyncio import sleep, create_task, run, get_event_loop
 
 from config import config
 from screen import TimeScreen, Matrix, AnimationScreen, BLUE
-
-wlan_connected = Event()
-wlan_connected_timeout = Event()
-
+import events
 
 # general coroutines and functions
 
@@ -23,12 +20,12 @@ async def log(wlan):
     # get all events and log whats happen
     # after the event is logged it should reset? -> maybe bad idea :D it should only reset by the coroutine that set it
     while True:
-        if wlan_connected.is_set():
+        if events.wlan_connected.is_set():
             wlan_config = wlan.ifconfig()
             ip_adress = wlan_config[0]
             hostname = wlan.config('hostname')
             print('Connected to', config['ssid'], 'as', hostname,'with', ip_adress)
-        if wlan_connected_timeout.is_set():
+        if events.wlan_connected_timeout.is_set():
             print('Wlan connected timeout')
         await sleep(1)
 
@@ -46,7 +43,7 @@ async def show_time(matrix):
 async def show_wait_animation(animation_screen):
     frame = 0
     while True:
-        if wlan_connected.is_set() or wlan_connected_timeout.is_set():
+        if events.wlan_connected.is_set() or events.wlan_connected_timeout.is_set():
             break
         if frame == 7:
             frame = 0
@@ -57,9 +54,9 @@ async def show_wait_animation(animation_screen):
 async def show_sucess_animation(animation_screen):
     frame = 0
     while True:
-        if frame == 11 or wlan_connected_timeout.is_set():
+        if frame == 11 or events.wlan_connected_timeout.is_set():
             break
-        if wlan_connected.is_set():
+        if events.wlan_connected.is_set():
             animation_screen.show_success_animation(frame)
             frame = frame + 1
         await sleep(0.1)
@@ -69,16 +66,16 @@ async def show_fail_animation(animation_screen):
     while True:
         if frame == 11:
             break
-        if wlan_connected_timeout.is_set():
+        if events.wlan_connected_timeout.is_set():
             animation_screen.show_fail_animation(frame)
             frame = frame + 1
         await sleep(0.1)
 
 async def show_network_connection_status(animation_screen):
     while True:
-        if wlan_connected.is_set():
+        if events.wlan_connected.is_set():
             animation_screen.show_network_connected_dot()
-        if wlan_connected_timeout.is_set():
+        if events.wlan_connected_timeout.is_set():
             animation_screen.show_network_not_connected_dot()
         await sleep(0.1)
 
@@ -99,23 +96,23 @@ def connect_to_wlan(wlan):
 async def set_wlan_connected_event(wlan):
     while True:
         if wlan.isconnected():
-            wlan_connected.set()
+            events.wlan_connected.set()
         else:
-            wlan_connected.clear()
+            events.wlan_connected.clear()
         await sleep(5)
 
 async def set_wlan_connected_timeout_event():
-    wlan_connected_timeout.clear()
+    events.wlan_connected_timeout.clear()
     timer = 0
     max_time = 10
     while True:
-        if wlan_connected.is_set():
-            wlan_connected_timeout.clear()
+        if events.wlan_connected.is_set():
+            events.wlan_connected_timeout.clear()
             timer = 0
         if timer >= max_time:
-            wlan_connected_timeout.set()
+            events.wlan_connected_timeout.set()
             await sleep(5)
-            wlan_connected_timeout.clear()
+            events.wlan_connected_timeout.clear()
             timer = 0
         timer = timer + 1
         await sleep(1)

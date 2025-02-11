@@ -4,13 +4,6 @@ from asyncio import Event
 from config import config
 
 
-booted = Event()            # 0 - hier kann unterschieden werden ob das System schon an war oder neu gebootet ist
-connectToWlan = Event()     # 1 - Wird gesetzt wenn gerade versucht wird eine Internetverbindung aufzubauen
-checkForUpdates = Event()   # 2 - Es wird gerade nach Updates gesucht
-deliverWebServer = Event()  # 3 - Der Webserver zum eingeben von SSID und Password fürs Wlan ist gerade aktiv
-updateFirmware = Event()    # 4 - Die Firmware wird gerade aktualisiert
-waitToCheck = Event()       # 5 - Es wird gerade gewartet um später nach Updates zu suchen
-
 wlan_connected = Event()
 wlan_connected_timeout = Event()
 
@@ -34,7 +27,7 @@ class UpdateStateMachine:
     
     async def boot_device(self):
         # state 0
-        booted.set()
+        events.booted.set()
 
     async def connect_to_wlan(self):
         # state 1
