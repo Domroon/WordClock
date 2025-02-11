@@ -1,3 +1,4 @@
+from machine import RTC
 import network
 from asyncio import sleep, create_task, run, get_event_loop, Event
 
@@ -26,7 +27,7 @@ async def log(wlan):
             wlan_config = wlan.ifconfig()
             ip_adress = wlan_config[0]
             hostname = wlan.config('hostname')
-            print('Connected to', SSID, 'as', hostname,'with', ip_adress)
+            print('Connected to', config['ssid'], 'as', hostname,'with', ip_adress)
         if wlan_connected_timeout.is_set():
             print('Wlan connected timeout')
         await sleep(1)
@@ -120,6 +121,12 @@ async def set_wlan_connected_timeout_event():
         await sleep(1)
 
 
+# from ds3231 import Timekeeper
+# rtc = RTC()
+# timekeeper = Timekeeper(rtc)
+# print(timekeeper.is_time_lost())
+# print("test")
+
 async def main():
     matrix = Matrix()
     animation_screen = AnimationScreen(matrix)
@@ -137,13 +144,8 @@ async def main():
     create_task(set_wlan_connected_event(wlan))
 
     # show tasks
-
-    # create_task(network_found_test(matrix))
     create_task(show_wait_animation(animation_screen))
-    # create_task(show_sucess_animation(animation_screen))
-    # create_task(show_fail_animation(animation_screen))
     create_task(show_network_connection_status(animation_screen))
-    # create_task(show_time(matrix))
 
     event_loop = get_event_loop()
     event_loop.run_forever()

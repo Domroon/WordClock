@@ -263,8 +263,14 @@ class AnimationScreen:
 
     def show_network_connected_dot(self):
         self.matrix.clear()
-        self.matrix.set_led(0, 0, [0, 255, 0])
+        self.matrix.set_led(0, 1, GREEN)
 
     def show_network_not_connected_dot(self):
         self.matrix.clear()
-        self.matrix.set_led(0, 0, [255, 0, 0])
+        self.matrix.set_led(0, 1, RED)
+
+    def show_timkeeper_valid(self):
+        self.matrix.set_led(0, 0, GREEN)
+
+    def show_timkeeper_not_valid(self):
+        self.matrix.set_led(0, 0, RED)
