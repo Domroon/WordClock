@@ -129,6 +129,50 @@ class UpdateStateMachine:
                 create_task(self.wait_to_check_updates())
             await sleep(1)
 
+
+class TimeStateMachine:
+    def __init__(self):
+        self.state = 0
+        self.first_run = True
+        self.wait_time = 30
+
+    async def check_wlan(self):
+        # state 1
+        if wlan_connected.is_set() and self.first_run:
+            self.first_run = False
+            self.state = 2
+        elif wlan_connected.is_set():
+            self.state = 3
+        else:
+            self.state = 4
+
+    async def update_timekeeper(self):
+        # state 2
+        pass
+
+    async def update_rtc(self):
+        # state 3
+        pass
+
+    async def wait_for_next_check(self):
+        # state 4
+        await sleep(self.wait_time)
+        self.state = 1
+
+    async def start(self):
+        self.state = 1
+        while True:
+            print('TimeStateMachine state: ', self.state)
+            if self.state == 1:
+                create_task(self.check_wlan())
+            elif self.state == 2:
+                create_task(self.update_timekeeper())
+            elif self.state == 3:
+                create_task(self.update_rtc())
+            elif self.state == 4:
+                create_task(self.wait_for_next_check())
+
+
 # general coroutines and functions
 
 async def print_alive():
