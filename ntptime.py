@@ -2,13 +2,37 @@ from time import gmtime
 import socket
 import struct
 
+import urequests as requests
+
 # The NTP host can be configured at runtime by doing: ntptime.host = 'myhost.org'
-host = "pool.ntp.org"
+host = "ptbtime2.ptb.de"
 # The NTP socket timeout can be configured at runtime by doing: ntptime.timeout = 2
 timeout = 1
 
+# Server that delivers datetime in json-Format
+timezone = 'Europe/Berlin'
+json_time_sever = f'https://timeapi.io/api/Time/current/zone?timeZone={timezone}'
 
-def time():
+
+class InternetError(Exception):
+    """Raises when the Router have no connection to the Internet"""
+
+
+def download_json_datetime():
+    try:
+        r = requests.get(json_time_sever)
+        infos = r.json()
+        r.close()
+        return infos
+    except OSError:
+        raise InternetError("No response from the requested server")
+
+
+def get_utc_offset(gmtime):
+    return download_json_datetime()['hour'] - gmtime[3]
+
+
+def download_ntp_time():
     NTP_QUERY = bytearray(48)
     NTP_QUERY[0] = 0x1B
     addr = socket.getaddrinfo(host, 123)[0][-1]
@@ -60,8 +84,19 @@ def time():
 
 
 # There's currently no timezone support in MicroPython, and the RTC is set in UTC time.
-def settime(rtc):
-    t = time()
+def set_rtc_time(rtc):
+    t = download_ntp_time()
 
     tm = gmtime(t)
-    rtc.datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3], tm[4], tm[5], 0))
+    utc_offset = get_utc_offset(tm)
+    print("utc offset", utc_offset)
+    rtc.datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3] + utc_offset, tm[4], tm[5], 0))
+
+
+def set_timekeeper_time(timekeeper):
+    t = download_ntp_time()
+
+    tm = gmtime(t)
+    utc_offset = get_utc_offset(tm)
+    print("utc offset", utc_offset)
+    timekeeper.set_datetime((tm[0], tm[1], tm[2], tm[3] + utc_offset, tm[4], tm[5], 0))

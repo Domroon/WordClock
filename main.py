@@ -2,6 +2,8 @@ from machine import RTC
 import network
 from asyncio import sleep, create_task, run, get_event_loop, Event
 
+import ntptime
+
 from ds3231 import Timekeeper
 from config import config
 from screen import TimeScreen, Matrix, AnimationScreen, BLUE
@@ -131,10 +133,12 @@ class UpdateStateMachine:
 
 
 class TimeStateMachine:
-    def __init__(self):
+    def __init__(self, timekeeper, rtc):
         self.state = 0
         self.first_run = True
         self.wait_time = 30
+        self.timekeeper = timekeeper
+        self.rtc = rtc
 
     async def check_wlan(self):
         # state 1
@@ -148,11 +152,19 @@ class TimeStateMachine:
 
     async def update_timekeeper(self):
         # state 2
-        pass
+        ntptime.set_timekeeper_time(self.timekeeper)
+        print(f'Synced Timekeeper with ntp-server "{ntptime.host}"')
+        print(f'Timekeeper-datetime: {self.timekeeper.get_datetime()}')
+        self.state = 3
+        await sleep(2)
 
     async def update_rtc(self):
         # state 3
-        pass
+        ntptime.set_rtc_time(self.rtc)
+        print(f'Synced RTC with ntp-server "{ntptime.host}"')
+        print(f'RTC-datetime: {self.rtc.datetime()}')
+        self.state = 4
+        await sleep(2)
 
     async def wait_for_next_check(self):
         # state 4
@@ -171,6 +183,7 @@ class TimeStateMachine:
                 create_task(self.update_rtc())
             elif self.state == 4:
                 create_task(self.wait_for_next_check())
+            await sleep(1)
 
 
 # general coroutines and functions
@@ -299,12 +312,14 @@ async def main():
     timekeeper = Timekeeper(rtc)
 
     update_state_machine = UpdateStateMachine(timekeeper, wlan)
+    time_state_machine = TimeStateMachine(timekeeper, rtc)
 
     matrix.clear()
 
     # general Tasks
     create_task(print_alive())
     create_task(log(wlan))
+    create_task(time_state_machine.start())
 
     # wlan tasks
     connect_to_wlan(wlan)
