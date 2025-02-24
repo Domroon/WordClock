@@ -6,7 +6,7 @@ import ntptime
 
 from ds3231 import Timekeeper
 from config import config
-from screen import TimeScreen, Matrix, AnimationScreen, BLUE
+from screen import TimeScreen, Matrix, AnimationScreen, BLUE, GREEN, RED, YELLOW
 import events
 
 
@@ -186,6 +186,95 @@ class TimeStateMachine:
             await sleep(1)
 
 
+class ScreenStateMachine:
+    def __init__(self, rtc, animation_screen, time_screen, matrix):
+        self.rtc: RTC = rtc
+        self.anim_screen: AnimationScreen = animation_screen
+        self.time_screen: TimeScreen = time_screen
+        self.matrix: Matrix = matrix
+        self.state = 0
+
+    async def show_connect_to_wlan(self):
+        # state 1
+        frame = 0
+        while True:
+            if wlan_connected.is_set() or wlan_connected_timeout.is_set():
+                self.state = 2
+                break
+            if frame == 6:
+                frame = 0
+            self.anim_screen.show_wait_line(frame, BLUE)
+            frame = frame + 1
+            await sleep(0.5)
+        
+    async def show_wlan_led(self):
+        # state 2
+        if wlan_connected.is_set():
+            self.matrix.set_led(0, 0, GREEN)
+        else:
+            self.matrix.set_led(0, 0, RED)
+        self.state = 3
+    
+    async def show_timekeeper_led(self):
+        # state 3
+        if timekeeper_time_is_valid.is_set():
+            self.matrix.set_led(0, 1, GREEN)
+        else:
+            self.matrix.set_led(0, 1, RED)
+        self.state = 4
+    
+    async def show_updates_led(self):
+        # state 4
+        # can only implemented when updates are fully implemented
+        if wlan_connected.is_set() or timekeeper_time_is_valid.is_set():
+            self.state = 5
+        else:
+            self.state = 6
+        self.matrix.set_led(0, 2, YELLOW)
+        await sleep(2)
+        self.matrix.clear()
+
+    async def show_time(self):
+        # state 5
+        print("datetime:", self.rtc.datetime())
+        while True:
+            hour = self.rtc.datetime()[4]
+            minute = self.rtc.datetime()[5]
+            self.time_screen.show_time(hour, minute)
+            await sleep(1)
+
+    async def show_red_connect_to_wlan(self):
+        # state 6
+        frame = 0
+        while True:
+            if wlan_connected.is_set():
+                break
+            if frame == 6:
+                frame = 0
+            self.anim_screen.show_wait_line(frame, RED)
+            frame = frame + 1
+            await sleep(0.5)
+        self.state = 2
+
+    async def start(self):
+        self.state = 1
+        while True:
+            print('ScreenStateMachine state: ', self.state)
+            if self.state == 1:
+                create_task(self.show_connect_to_wlan())
+            elif self.state == 2:
+                create_task(self.show_wlan_led())
+            elif self.state == 3:
+                create_task(self.show_timekeeper_led())
+            elif self.state == 4:
+                create_task(self.show_updates_led())
+            elif self.state == 5:
+                create_task(self.show_time())
+            elif self.state == 6:
+                create_task(self.show_red_connect_to_wlan())
+            await sleep(1)
+
+
 # general coroutines and functions
 
 async def print_alive():
@@ -308,11 +397,13 @@ async def main():
     rtc = RTC() 
     matrix = Matrix()
     animation_screen = AnimationScreen(matrix)
+    time_screen = TimeScreen(matrix)
     wlan = network.WLAN(network.WLAN.IF_STA)
     timekeeper = Timekeeper(rtc)
 
     update_state_machine = UpdateStateMachine(timekeeper, wlan)
     time_state_machine = TimeStateMachine(timekeeper, rtc)
+    screen_state_machine = ScreenStateMachine(rtc, animation_screen, time_screen, matrix)
 
     matrix.clear()
 
@@ -328,6 +419,7 @@ async def main():
 
     # state machine tasks
     create_task(update_state_machine.start())
+    create_task(screen_state_machine.start())
 
     # show tasks
     # create_task(show_wait_animation(animation_screen))
